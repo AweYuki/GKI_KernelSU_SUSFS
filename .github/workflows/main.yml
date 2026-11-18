@@ -156,13 +156,64 @@ jobs:
     with:
       kernelsu_variant: ${{ inputs.kernelsu_variant }}
 
+  # Generate build matrices dynamically from data/android*/*.json
+  prepare-matrices:
+    if: inputs.build_all || inputs.build_a12_5_10 || inputs.build_a13_5_15 || inputs.build_a14_6_1 || inputs.build_a15_6_6 || inputs.build_a16_6_12
+    runs-on: ubuntu-24.04
+    outputs:
+      m510: ${{ steps.gen.outputs.m510 }}
+      m515: ${{ steps.gen.outputs.m515 }}
+      m61: ${{ steps.gen.outputs.m61 }}
+      m66: ${{ steps.gen.outputs.m66 }}
+      m612: ${{ steps.gen.outputs.m612 }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          sparse-checkout: data
+
+      - name: Build kernel matrices from data JSON
+        id: gen
+        run: |
+          python3 - << 'PY' >> "$GITHUB_OUTPUT"
+          import json
+          specs = [
+              ("m510", "data/android12/5.10.json", "2022-01"),
+              ("m515", "data/android13/5.15.json", "2023-01"),
+              ("m61",  "data/android14/6.1.json",  "2023-10"),
+              ("m66",  "data/android15/6.6.json",  "2024-10"),
+              ("m612", "data/android16/6.12.json", "2025-06"),
+          ]
+          for key, path, min_date in specs:
+              data = json.load(open(path, encoding="utf-8"))
+              include = []
+              for v in data.get("entries", []):
+                  d = v.get("date", "")
+                  k = v.get("kernel", "")
+                  if d < min_date:
+                      continue
+                  sub = k.split(".")[-1]
+                  include.append({"sub_level": sub, "os_patch_level": d})
+              if data.get("lts"):
+                  include.append({"sub_level": "X", "os_patch_level": "lts"})
+              print(f"{key}={json.dumps({'include': include}, separators=(',', ':'))}")
+          PY
+
   build-a12-5-10:
     if: inputs.build_a12_5_10 || inputs.build_all
-    uses: ./.github/workflows/kernel-a12-5-10.yml
+    needs: prepare-matrices
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.prepare-matrices.outputs.m510) }}
+    uses: ./.github/workflows/build.yml
     secrets: inherit
     with:
-      kernelsu_variant: ${{ inputs.kernelsu_variant }}
-      version: ${{ inputs.version }}
+      android_version: "android12"
+      kernel_version: "5.10"
+      sub_level: ${{ matrix.sub_level }}
+      os_patch_level: ${{ matrix.os_patch_level }}
+      ksu_variant: ${{ inputs.kernelsu_variant }}
+      version: ${{ inputs.version || '' }}
       build_time: ${{ inputs.build_time || '' }}
       use_zram: ${{ inputs.use_zram }}
       use_bbg: ${{ inputs.use_bbg }}
@@ -172,23 +223,32 @@ jobs:
       use_networking: ${{ inputs.use_networking }}
       cve_2026_43499_patch: ${{ inputs.cve_2026_43499_patch }}
       export_susfs_patches: ${{ inputs.export_susfs_patches }}
+      supp_op: false
+      enable_susfs: ${{ inputs.ksu_mode != 'Disable SUSFS' && inputs.ksu_mode != 'Disable KSU' }}
       ksu_mode: ${{ inputs.ksu_mode }}
       droidspaces: ${{ inputs.droidspaces }}
-      artifact_upload_mode: "Upload All"
       droidspaces_ntsync: ${{ inputs.droidspaces_ntsync }}
       use_usb_arsenal: ${{ inputs.use_usb_arsenal }}
       use_ptrace: ${{ inputs.use_ptrace }}
       use_perf: ${{ inputs.use_perf }}
       allow_version_mismatch: ${{ inputs.allow_version_mismatch }}
-      called_from_main: true
+      artifact_upload_mode: "Upload All"
 
   build-a13-5-15:
     if: inputs.build_a13_5_15 || inputs.build_all
-    uses: ./.github/workflows/kernel-a13-5-15.yml
+    needs: prepare-matrices
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.prepare-matrices.outputs.m515) }}
+    uses: ./.github/workflows/build.yml
     secrets: inherit
     with:
-      kernelsu_variant: ${{ inputs.kernelsu_variant }}
-      version: ${{ inputs.version }}
+      android_version: "android13"
+      kernel_version: "5.15"
+      sub_level: ${{ matrix.sub_level }}
+      os_patch_level: ${{ matrix.os_patch_level }}
+      ksu_variant: ${{ inputs.kernelsu_variant }}
+      version: ${{ inputs.version || '' }}
       build_time: ${{ inputs.build_time || '' }}
       use_zram: ${{ inputs.use_zram }}
       use_bbg: ${{ inputs.use_bbg }}
@@ -198,23 +258,32 @@ jobs:
       use_networking: ${{ inputs.use_networking }}
       cve_2026_43499_patch: ${{ inputs.cve_2026_43499_patch }}
       export_susfs_patches: ${{ inputs.export_susfs_patches }}
+      supp_op: false
+      enable_susfs: ${{ inputs.ksu_mode != 'Disable SUSFS' && inputs.ksu_mode != 'Disable KSU' }}
       ksu_mode: ${{ inputs.ksu_mode }}
       droidspaces: ${{ inputs.droidspaces }}
-      artifact_upload_mode: "Upload All"
       droidspaces_ntsync: ${{ inputs.droidspaces_ntsync }}
       use_usb_arsenal: ${{ inputs.use_usb_arsenal }}
       use_ptrace: ${{ inputs.use_ptrace }}
       use_perf: ${{ inputs.use_perf }}
       allow_version_mismatch: ${{ inputs.allow_version_mismatch }}
-      called_from_main: true
+      artifact_upload_mode: "Upload All"
 
   build-a14-6-1:
     if: inputs.build_a14_6_1 || inputs.build_all
-    uses: ./.github/workflows/kernel-a14-6-1.yml
+    needs: prepare-matrices
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.prepare-matrices.outputs.m61) }}
+    uses: ./.github/workflows/build.yml
     secrets: inherit
     with:
-      kernelsu_variant: ${{ inputs.kernelsu_variant }}
-      version: ${{ inputs.version }}
+      android_version: "android14"
+      kernel_version: "6.1"
+      sub_level: ${{ matrix.sub_level }}
+      os_patch_level: ${{ matrix.os_patch_level }}
+      ksu_variant: ${{ inputs.kernelsu_variant }}
+      version: ${{ inputs.version || '' }}
       build_time: ${{ inputs.build_time || '' }}
       use_zram: ${{ inputs.use_zram }}
       use_bbg: ${{ inputs.use_bbg }}
@@ -224,23 +293,32 @@ jobs:
       use_networking: ${{ inputs.use_networking }}
       cve_2026_43499_patch: ${{ inputs.cve_2026_43499_patch }}
       export_susfs_patches: ${{ inputs.export_susfs_patches }}
+      supp_op: false
+      enable_susfs: ${{ inputs.ksu_mode != 'Disable SUSFS' && inputs.ksu_mode != 'Disable KSU' }}
       ksu_mode: ${{ inputs.ksu_mode }}
       droidspaces: ${{ inputs.droidspaces }}
-      artifact_upload_mode: "Upload All"
       droidspaces_ntsync: ${{ inputs.droidspaces_ntsync }}
       use_usb_arsenal: ${{ inputs.use_usb_arsenal }}
       use_ptrace: ${{ inputs.use_ptrace }}
       use_perf: ${{ inputs.use_perf }}
       allow_version_mismatch: ${{ inputs.allow_version_mismatch }}
-      called_from_main: true
+      artifact_upload_mode: "Upload All"
 
   build-a15-6-6:
     if: inputs.build_a15_6_6 || inputs.build_all
-    uses: ./.github/workflows/kernel-a15-6-6.yml
+    needs: prepare-matrices
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.prepare-matrices.outputs.m66) }}
+    uses: ./.github/workflows/build.yml
     secrets: inherit
     with:
-      kernelsu_variant: ${{ inputs.kernelsu_variant }}
-      version: ${{ inputs.version }}
+      android_version: "android15"
+      kernel_version: "6.6"
+      sub_level: ${{ matrix.sub_level }}
+      os_patch_level: ${{ matrix.os_patch_level }}
+      ksu_variant: ${{ inputs.kernelsu_variant }}
+      version: ${{ inputs.version || '' }}
       build_time: ${{ inputs.build_time || '' }}
       use_zram: ${{ inputs.use_zram }}
       use_bbg: ${{ inputs.use_bbg }}
@@ -250,23 +328,32 @@ jobs:
       use_networking: ${{ inputs.use_networking }}
       cve_2026_43499_patch: ${{ inputs.cve_2026_43499_patch }}
       export_susfs_patches: ${{ inputs.export_susfs_patches }}
+      supp_op: false
+      enable_susfs: ${{ inputs.ksu_mode != 'Disable SUSFS' && inputs.ksu_mode != 'Disable KSU' }}
       ksu_mode: ${{ inputs.ksu_mode }}
       droidspaces: ${{ inputs.droidspaces }}
-      artifact_upload_mode: "Upload All"
       droidspaces_ntsync: ${{ inputs.droidspaces_ntsync }}
       use_usb_arsenal: ${{ inputs.use_usb_arsenal }}
       use_ptrace: ${{ inputs.use_ptrace }}
       use_perf: ${{ inputs.use_perf }}
       allow_version_mismatch: ${{ inputs.allow_version_mismatch }}
-      called_from_main: true
+      artifact_upload_mode: "Upload All"
 
   build-a16-6-12:
     if: inputs.build_a16_6_12 || inputs.build_all
-    uses: ./.github/workflows/kernel-a16-6-12.yml
+    needs: prepare-matrices
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.prepare-matrices.outputs.m612) }}
+    uses: ./.github/workflows/build.yml
     secrets: inherit
     with:
-      kernelsu_variant: ${{ inputs.kernelsu_variant }}
-      version: ${{ inputs.version }}
+      android_version: "android16"
+      kernel_version: "6.12"
+      sub_level: ${{ matrix.sub_level }}
+      os_patch_level: ${{ matrix.os_patch_level }}
+      ksu_variant: ${{ inputs.kernelsu_variant }}
+      version: ${{ inputs.version || '' }}
       build_time: ${{ inputs.build_time || '' }}
       use_zram: ${{ inputs.use_zram }}
       use_bbg: ${{ inputs.use_bbg }}
@@ -276,15 +363,16 @@ jobs:
       use_networking: ${{ inputs.use_networking }}
       cve_2026_43499_patch: ${{ inputs.cve_2026_43499_patch }}
       export_susfs_patches: ${{ inputs.export_susfs_patches }}
+      supp_op: false
+      enable_susfs: ${{ inputs.ksu_mode != 'Disable SUSFS' && inputs.ksu_mode != 'Disable KSU' }}
       ksu_mode: ${{ inputs.ksu_mode }}
       droidspaces: ${{ inputs.droidspaces }}
-      artifact_upload_mode: "Upload All"
       droidspaces_ntsync: ${{ inputs.droidspaces_ntsync }}
       use_usb_arsenal: ${{ inputs.use_usb_arsenal }}
       use_ptrace: ${{ inputs.use_ptrace }}
       use_perf: ${{ inputs.use_perf }}
       allow_version_mismatch: ${{ inputs.allow_version_mismatch }}
-      called_from_main: true
+      artifact_upload_mode: "Upload All"
 
   # Aggregate .rej files across all build jobs to debug patch conflicts
   collect-rejects:

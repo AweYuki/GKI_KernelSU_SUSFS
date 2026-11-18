@@ -1,0 +1,201 @@
+name: "Apply SUSFS Patches"
+description: "Clone SUSFS, record baseline snapshot, apply sublevel-adapted patches, and export integrated patch"
+
+inputs:
+  android_version:
+    required: true
+    type: string
+  kernel_version:
+    required: true
+    type: string
+  sub_level:
+    required: true
+    type: string
+  os_patch_level:
+    required: true
+    type: string
+  ksu_variant:
+    required: true
+    type: string
+  ksu_mode:
+    required: true
+    type: string
+  export_susfs_patches:
+    required: false
+    default: "false"
+    type: string
+
+runs:
+  using: "composite"
+  steps:
+    - name: Clone SUSFS source
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        # Retry up to 5 times with a fixed 5-second delay between attempts.
+        retry() {
+          local attempt rc=1
+          for attempt in 1 2 3 4 5; do
+            echo "Attempt $attempt/5: $*"
+            if "$@"; then
+              return 0
+            else
+              rc=$?
+            fi
+            if [ "$attempt" -lt 5 ]; then
+              echo "::warning::Command failed (exit code $rc), retrying in 5s: $*"
+              sleep 5 || return 1
+            fi
+          done
+          echo "Command failed after 5 attempts (exit code $rc): $*" >&2
+          return "$rc"
+        }
+
+        # Clean up partial leftovers so retries are not blocked by an existing directory.
+        clone_susfs() {
+          local rc
+          rm -rf -- susfs4ksu || return 1
+          if git clone "$1" -b "$SUSFS_BRANCH" susfs4ksu; then
+            return 0
+          else
+            rc=$?
+          fi
+          rm -rf -- susfs4ksu || return 1
+          return "$rc"
+        }
+
+        SUSFS_BRANCH="gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}"
+
+        echo "Cloning SUSFS (branch: $SUSFS_BRANCH)..."
+        retry clone_susfs https://gitlab.com/simonpunk/susfs4ksu.git
+
+        CONFIG_FILE="config/config"
+        if [ -f "$CONFIG_FILE" ]; then
+          CUSTOM_ENABLED=$(grep "^custom=" "$CONFIG_FILE" | cut -d'=' -f2 || true)
+          if [ "$CUSTOM_ENABLED" == "true" ]; then
+            CUSTOM_COMMIT=$(grep "^${SUSFS_BRANCH}=" "$CONFIG_FILE" | cut -d'=' -f2 || true)
+            if [ -n "$CUSTOM_COMMIT" ]; then
+              echo "Checking out custom SUSFS commit: $CUSTOM_COMMIT"
+              cd susfs4ksu
+              retry git checkout "$CUSTOM_COMMIT"
+              cd ..
+            fi
+          fi
+        fi
+
+        echo "Actual SUSFS commit: $(git -C susfs4ksu rev-parse HEAD)"
+        SUSFS_LATEST_COMMIT_DATE=$(git -C susfs4ksu log -1 --date=format:'%Y-%m-%d %H:%M:%S %z' --format='%cd')
+        echo "SUSFS_LATEST_COMMIT_DATE=$SUSFS_LATEST_COMMIT_DATE" >> "$GITHUB_ENV"
+        echo "Latest SUSFS commit date: $SUSFS_LATEST_COMMIT_DATE"
+
+    # Exported for AweYukiSU when SUSFS is enabled; uses a temporary git index to snapshot tree objects
+    # without creating a commit, preserving the HEAD hash read by "Configure kernel localversion".
+    - name: Record SUSFS baseline snapshot
+      if: inputs.export_susfs_patches == 'true' && inputs.ksu_mode != 'Disable KSU' && inputs.ksu_variant == 'AweYukiSU'
+      shell: bash
+      working-directory: ${{ env.KERNEL_ROOT }}/common
+      run: |
+        # Exclude .rej/.orig and patch files themselves: apply.sh copies SUSFS patches into common/ and may leave .rej files.
+        # Copy the real index first so git add only hashes modified files instead of re-hashing the entire kernel tree.
+        cp "$(git rev-parse --git-path index)" /tmp/susfs-base.idx
+        export GIT_INDEX_FILE=/tmp/susfs-base.idx
+        git add -A -- . ':!*.rej' ':!*.orig' ':!*.patch'
+        SUSFS_BASE_TREE=$(git write-tree)
+        echo "SUSFS_BASE_TREE=$SUSFS_BASE_TREE" >> $GITHUB_ENV
+        echo "SUSFS_PATCH_EXPORT=true" >> $GITHUB_ENV
+        echo "Baseline tree object: $SUSFS_BASE_TREE"
+
+    - name: Apply SUSFS patches
+      shell: bash
+      working-directory: ${{ env.KERNEL_ROOT }}
+      env:
+        ANDROID_VERSION: ${{ inputs.android_version }}
+        KERNEL_VERSION: ${{ inputs.kernel_version }}
+        KSU_VARIANT: ${{ inputs.ksu_variant }}
+        OS_PATCH_LEVEL: ${{ inputs.os_patch_level }}
+        SUB_LEVEL: ${{ inputs.sub_level }}
+      run: bash "$GITHUB_WORKSPACE/scripts/susfs_fixes/apply.sh"
+
+    - name: Generate integrated SUSFS patch
+      if: env.SUSFS_PATCH_EXPORT == 'true'
+      shell: bash
+      working-directory: ${{ env.KERNEL_ROOT }}/common
+      env:
+        OUT_DIR: ${{ github.workspace }}/susfs-patch
+      run: |
+        export_susfs_patch() {
+          cp /tmp/susfs-base.idx /tmp/susfs-after.idx || return 1
+          export GIT_INDEX_FILE=/tmp/susfs-after.idx
+          git add -A -- . ':!*.rej' ':!*.orig' ':!*.patch' || return 1
+          local after_tree
+          after_tree=$(git write-tree) || return 1
+          unset GIT_INDEX_FILE
+
+          mkdir -p "$OUT_DIR"
+          git diff --binary "$SUSFS_BASE_TREE" "$after_tree" > "$OUT_DIR/susfs.patch" || return 1
+          if [ ! -s "$OUT_DIR/susfs.patch" ]; then
+            echo "Patch content is empty"
+            return 1
+          fi
+          # Dry-run reverse apply to verify the patch matches the current working tree exactly
+          git apply --check -R "$OUT_DIR/susfs.patch" || return 1
+
+          local formatted_branch gki_branch gki_commit
+          formatted_branch="${{ inputs.android_version }}-${{ inputs.kernel_version }}-${{ inputs.os_patch_level }}"
+          gki_branch="$formatted_branch"
+          grep -q deprecated <<< "$REMOTE_BRANCH" && gki_branch="deprecated/$formatted_branch"
+          # When the branch has been deleted upstream, a release tag is checked out instead
+          [ -n "$TAG_FALLBACK" ] && gki_branch="refs/tags/$TAG_FALLBACK"
+          gki_commit=$(git rev-parse HEAD)
+
+          # Read KSU and SUSFS commits directly from the repositories cloned in this build rather than querying ls-remote
+          local ksu_repo ksu_commit ksu_slug ksu_setup_cmd
+          ksu_repo=$(git -C "$KERNEL_ROOT/KernelSU" remote get-url origin | sed 's/\.git$//')
+          ksu_commit=$(git -C "$KERNEL_ROOT/KernelSU" rev-parse HEAD)
+          ksu_slug=${ksu_repo#https://github.com/}
+          ksu_setup_cmd="curl -LSs https://raw.githubusercontent.com/$ksu_slug/main/kernel/setup.sh | sed 's|Baka-SU/BakaSU|$ksu_slug|g' | bash -s $ksu_commit"
+
+          local susfs_repo susfs_branch susfs_commit
+          susfs_repo=$(git -C "$SUSFS4KSU" remote get-url origin | sed 's/\.git$//')
+          susfs_branch="gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}"
+          susfs_commit=$(git -C "$SUSFS4KSU" rev-parse HEAD)
+
+          local rej_count patch_sha256
+          # Unmodified upstream .rej files (e.g., mm/rmap.c.rej in android15-6.6-2026-04) do not count as conflicts;
+          # failed patches overwrite same-named files, so modified ones are still counted.
+          rej_count=$(comm -23 \
+            <(find . -type f -name '*.rej' | sed 's|^\./||' | sort) \
+            <(git ls-files -- '*.rej' | while IFS= read -r f; do git diff --quiet -- "$f" && echo "$f"; done | sort) | wc -l)
+          patch_sha256=$(sha256sum "$OUT_DIR/susfs.patch" | awk '{print $1}')
+
+          jq -n \
+            --arg android_version "${{ inputs.android_version }}" \
+            --arg kernel_version "${{ inputs.kernel_version }}" \
+            --arg sub_level "${{ inputs.sub_level }}" \
+            --arg actual_sublevel "$ACTUAL_SUBLEVEL" \
+            --arg os_patch_level "${{ inputs.os_patch_level }}" \
+            --arg gki_branch "$gki_branch" \
+            --arg gki_commit "$gki_commit" \
+            --arg ksu_variant "${{ inputs.ksu_variant }}" \
+            --arg ksu_repo "$ksu_repo" \
+            --arg ksu_commit "$ksu_commit" \
+            --arg ksu_setup_cmd "$ksu_setup_cmd" \
+            --arg susfs_repo "$susfs_repo" \
+            --arg susfs_branch "$susfs_branch" \
+            --arg susfs_commit "$susfs_commit" \
+            --argjson rej_count "$rej_count" \
+            --arg patch_sha256 "$patch_sha256" \
+            --arg generated_at "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
+            --arg run_id "$GITHUB_RUN_ID" \
+            '$ARGS.named' > "$OUT_DIR/manifest.json" || return 1
+
+          echo "Patch size: $(du -h "$OUT_DIR/susfs.patch" | cut -f1), .rej count: $rej_count"
+          cat "$OUT_DIR/manifest.json"
+        }
+
+        if ! export_susfs_patch; then
+          echo "::warning::Failed to export integrated SUSFS patch; skipping patch upload for this build"
+          rm -rf "$OUT_DIR"
+          echo "SUSFS_PATCH_EXPORT=false" >> $GITHUB_ENV
+        fi

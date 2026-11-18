@@ -1,0 +1,117 @@
+name: "Apply WildKernels Misc Patches"
+description: "Apply optional WildKernels GKI ptrace, performance/power suite, and module version mismatch bypass"
+
+inputs:
+  kernel_version:
+    required: true
+    type: string
+  use_ptrace:
+    required: false
+    default: "false"
+    type: string
+  use_perf:
+    required: false
+    default: "false"
+    type: string
+  allow_version_mismatch:
+    required: false
+    default: "false"
+    type: string
+
+runs:
+  using: "composite"
+  steps:
+    - name: Apply GKI ptrace compatibility patch
+      if: inputs.use_ptrace == 'true'
+      shell: bash
+      working-directory: ${{ env.KERNEL_ROOT }}/common
+      run: |
+        set -euo pipefail
+        KERNEL_VERSION="${{ inputs.kernel_version }}"
+        if [ "$KERNEL_VERSION" != "5.16" ] && [ "$(printf '%s\n' "$KERNEL_VERSION" "5.16" | sort -V | head -n1)" = "$KERNEL_VERSION" ]; then
+          echo "Applying WildKernels GKI ptrace patch for kernel $KERNEL_VERSION..."
+          patch -p1 -F 3 --forward < "$KERNEL_PATCHES/gki_ptrace.patch" || true
+        else
+          echo "Kernel $KERNEL_VERSION >= 5.16, skipping GKI ptrace patch"
+        fi
+
+    - name: Apply WildKernels performance and power optimization patches
+      if: inputs.use_perf == 'true'
+      shell: bash
+      working-directory: ${{ env.KERNEL_ROOT }}/common
+      run: |
+        set -euo pipefail
+        KERNEL_VERSION="${{ inputs.kernel_version }}"
+        MIN_VERSION="5.16"
+
+        echo "Applying WildKernels performance & power optimization patch suite..."
+        for p in \
+          optimized_mem_operations.patch \
+          file_struct_8bytes_align.patch \
+          reduce_cache_pressure.patch \
+          mem_opt_prefetch.patch; do
+          patch -p1 --forward < "$KERNEL_PATCHES/common/$p" || true
+        done
+
+        if [ "$(printf '%s\n' "$KERNEL_VERSION" "$MIN_VERSION" | sort -V | tail -n1)" = "$KERNEL_VERSION" ]; then
+          patch -p1 --forward < "$KERNEL_PATCHES/common/optimise_memcmp.patch" || true
+        elif [ "$(printf '%s\n' "$KERNEL_VERSION" "5.11" | sort -V | tail -n1)" = "$KERNEL_VERSION" ]; then
+          sed -e 's/SYM_FUNC_START(__pi_memcmp)/SYM_FUNC_START_WEAK_PI(memcmp)/' \
+              -e 's/SYM_FUNC_END(__pi_memcmp)/SYM_FUNC_END_PI(memcmp)/' \
+              -e 's/SYM_FUNC_ALIAS_WEAK(memcmp, __pi_memcmp)/EXPORT_SYMBOL_NOKASAN(memcmp)/' \
+              "$KERNEL_PATCHES/common/optimise_memcmp.patch" | patch -p1 --forward || true
+        fi
+
+        for p in \
+          minimise_wakeup_time.patch \
+          int_sqrt.patch \
+          reduce_gc_thread_sleep_time.patch \
+          add_timeout_wakelocks_globally.patch \
+          f2fs_reduce_congestion.patch \
+          reduce_freeze_timeout.patch; do
+          patch -p1 --forward < "$KERNEL_PATCHES/common/$p" || true
+        done
+
+        if [ "$(printf '%s\n' "$KERNEL_VERSION" "$MIN_VERSION" | sort -V | head -n1)" = "$KERNEL_VERSION" ]; then
+          patch -p1 --forward < "$KERNEL_PATCHES/common/clear_page_16bytes_align.patch" || true
+        else
+          sed -e 's/SYM_FUNC_START_PI(clear_page)/SYM_FUNC_START_PI(__pi_clear_page)/' \
+            "$KERNEL_PATCHES/common/clear_page_16bytes_align.patch" | patch -p1 -F3 --forward || true
+        fi
+
+        WAKEUP_FILE="drivers/base/power/wakeup.c"
+        if [ -f "$WAKEUP_FILE" ] && grep -q "^void pm_system_wakeup(void)" "$WAKEUP_FILE"; then
+          if sed -n '/^void pm_system_wakeup(void)/,/^}/p' "$WAKEUP_FILE" | grep -F 'suspend_abort_fs_sync();' >/dev/null; then
+            sed -i '/^void pm_system_wakeup(void)/,/^}/{/suspend_abort_fs_sync();/d;}' "$WAKEUP_FILE"
+          fi
+        fi
+        for p in \
+          avoid_extra_s2idle_wake_attempts.patch \
+          disable_cache_hot_buddy.patch \
+          f2fs_enlarge_min_fsync_blocks.patch \
+          increase_ext4_default_commit_age.patch \
+          increase_sk_mem_packets.patch \
+          reduce_pci_pme_wakeups.patch \
+          silence_irq_cpu_logspam.patch \
+          silence_system_logspam.patch; do
+          patch -p1 -F3 --forward < "$KERNEL_PATCHES/common/$p" || true
+        done
+        echo "[+] WildKernels performance & power patches applied"
+
+    - name: Apply module version mismatch bypass
+      if: inputs.allow_version_mismatch == 'true'
+      shell: bash
+      working-directory: ${{ env.KERNEL_ROOT }}/common
+      run: |
+        set -euo pipefail
+        if [ -f kernel/module/version.c ]; then
+          TARGET_FILE="kernel/module/version.c"
+        else
+          TARGET_FILE="kernel/module.c"
+        fi
+        sed -i '/bad_version:/{:a;n;/return 0;/{s/return 0;/return 1;/;b};ba}' "$TARGET_FILE"
+        if ! grep -A 5 "bad_version:" "$TARGET_FILE" | grep -F "return 1;" >/dev/null; then
+          echo "::error::Module bypass patch failed: 'return 1;' not found under bad_version: in $TARGET_FILE" >&2
+          exit 1
+        fi
+        echo "[+] Applied module version mismatch bypass to $TARGET_FILE"

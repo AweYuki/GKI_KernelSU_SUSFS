@@ -1,0 +1,141 @@
+name: "Apply NTSync Support"
+description: "Inject NTSync backport, 5.10 lockdep prerequisites, and CONFIG_NTSYNC=y"
+
+inputs:
+  android_version:
+    required: true
+    type: string
+  kernel_version:
+    required: true
+    type: string
+
+runs:
+  using: "composite"
+  steps:
+    - name: Inject NTSync kernel patch and config
+      shell: bash
+      working-directory: ${{ env.KERNEL_ROOT }}/common
+      run: |
+        set -e
+        echo "=== Injecting NTSync kernel patch ==="
+        echo "Android Version: ${{ inputs.android_version }}"
+        echo "Kernel Version: ${{ inputs.kernel_version }}"
+
+        RAW_SUB="$ACTUAL_SUBLEVEL"
+        [[ ! "$RAW_SUB" =~ ^[0-9]+$ ]] && CURRENT_SUB=99999 || CURRENT_SUB=$RAW_SUB
+
+        # Apply WildKernels lockdep prerequisite patches for older android12-5.10 sublevels
+        if [[ "${{ inputs.android_version }}-${{ inputs.kernel_version }}" == "android12-5.10" ]]; then
+          if [[ "$CURRENT_SUB" -le 66 ]]; then
+            patch -p1 -N < "$GITHUB_WORKSPACE/patches/ntsync/0001-lockdep-detect-recursive-read.patch" || true
+          fi
+          if [[ "$CURRENT_SUB" -le 209 ]] && ! grep -q 'lockdep_assert_none_held_once' include/linux/lockdep.h 2>/dev/null; then
+            patch -p1 -N < "$GITHUB_WORKSPACE/patches/ntsync/0002-lockdep-assert-none-held.patch"
+          fi
+        fi
+
+        case "${{ inputs.android_version }}-${{ inputs.kernel_version }}" in
+          android12-5.10)
+            NTSYNC_PATCH="ntsync_compat_android12-5.10"
+            ;;
+          android13-5.15)
+            NTSYNC_PATCH="ntsync_compat_android13-5.15"
+            ;;
+          android14-6.1)
+            NTSYNC_PATCH="ntsync_compat_android14-6.1"
+            ;;
+          android15-6.6)
+            NTSYNC_PATCH="ntsync_compat_android15-6.6"
+            ;;
+          android16-6.12)
+            NTSYNC_PATCH="ntsync_compat_android16-6.12"
+            ;;
+          *)
+            echo "::warning::NTSync: unsupported ${{ inputs.android_version }} / ${{ inputs.kernel_version }}, skipping patch"
+            exit 0
+            ;;
+        esac
+
+        echo "Selected NTSync patch: ${NTSYNC_PATCH}.patch"
+        PATCH_DIR=$(mktemp -d)
+        trap 'rm -rf "$PATCH_DIR"' EXIT
+        PATCH_URL="https://raw.githubusercontent.com/Goldzxcbug/Droidspaces_Kernel_patch/refs/heads/main/NTsync"
+        LOCAL_NTSYNC_DIR="$KERNEL_PATCHES/common/ntsync"
+
+        ntsync_complete() {
+          local root="$1" symbol
+          [ -f "$root/drivers/misc/ntsync.c" ] && [ -f "$root/include/uapi/linux/ntsync.h" ] || return 1
+          for symbol in CREATE_MUTEX CREATE_EVENT WAIT_ANY WAIT_ALL; do
+            grep -qF "case NTSYNC_IOC_${symbol}:" "$root/drivers/misc/ntsync.c" || return 1
+            grep -qE "^#define[[:space:]]+NTSYNC_IOC_${symbol}[[:space:]]" "$root/include/uapi/linux/ntsync.h" || return 1
+          done
+        }
+
+        # 6.12 ships an early semaphore-only implementation; do not skip the full backport merely because the files exist.
+        if ntsync_complete .; then
+          echo "Complete NTSync implementation already present; keeping source and skipping base patch"
+        else
+          if [ -e drivers/misc/ntsync.c ] || [ -e include/uapi/linux/ntsync.h ]; then
+            if [ "${{ inputs.android_version }}-${{ inputs.kernel_version }}" = "android16-6.12" ] \
+              && [ -f drivers/misc/ntsync.c ] && [ -f include/uapi/linux/ntsync.h ] \
+              && grep -qF 'NTSYNC_IOC_SEM_POST' drivers/misc/ntsync.c \
+              && grep -qF 'NTSYNC_IOC_SEM_POST' include/uapi/linux/ntsync.h \
+              && ! grep -qE 'NTSYNC_IOC_(WAIT_ANY|WAIT_ALL)' drivers/misc/ntsync.c include/uapi/linux/ntsync.h; then
+              echo "Upgrading incomplete built-in NTSync implementation on Android 16 / 6.12"
+            else
+              echo "::error::Existing NTSync files are incomplete or unrecognized; refusing to overwrite — check source and headers"
+              exit 1
+            fi
+          fi
+
+          # Prefer WildKernels/kernel_patches local copy with remote fallback
+          if [ -f "$LOCAL_NTSYNC_DIR/ntsync_base.patch" ]; then
+            cp "$LOCAL_NTSYNC_DIR/ntsync_base.patch" "$PATCH_DIR/ntsync_base.patch"
+          else
+            wget -q -O "$PATCH_DIR/ntsync_base.patch" "$PATCH_URL/ntsync_base.patch"
+          fi
+          mkdir -p "$PATCH_DIR/base/drivers/misc" "$PATCH_DIR/base/include/uapi/linux"
+          patch --batch --forward -p1 -d "$PATCH_DIR/base" < "$PATCH_DIR/ntsync_base.patch"
+          if ! ntsync_complete "$PATCH_DIR/base"; then
+            echo "::error::NTSync base patch is missing complete ioctl interfaces; aborting installation"
+            exit 1
+          fi
+          mkdir -p drivers/misc include/uapi/linux
+          cp "$PATCH_DIR/base/drivers/misc/ntsync.c" drivers/misc/ntsync.c
+          cp "$PATCH_DIR/base/include/uapi/linux/ntsync.h" include/uapi/linux/ntsync.h
+        fi
+
+        # The 6.12 compat patch only drops BROKEN; skip if the native driver is already wired into Kconfig / Makefile.
+        if [ "${{ inputs.android_version }}-${{ inputs.kernel_version }}" = "android16-6.12" ] \
+          && grep -qE '^config NTSYNC$' drivers/misc/Kconfig \
+          && ! awk '/^config NTSYNC$/ {f=1; next} f && /^(menuconfig|config) / {exit} f {print}' drivers/misc/Kconfig | grep -qw BROKEN \
+          && grep -qE '^[[:space:]]*obj-\$\(CONFIG_NTSYNC\)[[:space:]]*\+=[[:space:]]*ntsync\.o([[:space:]]|$)' drivers/misc/Makefile; then
+          echo "NTSync already wired into Kconfig / Makefile, skipping compat patch"
+        else
+          if [ -f "$LOCAL_NTSYNC_DIR/${NTSYNC_PATCH}.patch" ]; then
+            cp "$LOCAL_NTSYNC_DIR/${NTSYNC_PATCH}.patch" "$PATCH_DIR/compat.patch"
+          else
+            wget -q -O "$PATCH_DIR/compat.patch" "$PATCH_URL/${NTSYNC_PATCH}.patch"
+          fi
+          if patch --dry-run --batch --forward -p1 < "$PATCH_DIR/compat.patch" > "$PATCH_DIR/compat-check.log" 2>&1; then
+            patch --batch --forward -p1 < "$PATCH_DIR/compat.patch"
+          elif patch --dry-run --batch --reverse -p1 < "$PATCH_DIR/compat.patch" > /dev/null 2>&1; then
+            echo "NTSync compat patch already applied, skipping"
+          else
+            cat "$PATCH_DIR/compat-check.log"
+            echo "::error::NTSync compat patch failed to apply cleanly; aborting configuration"
+            exit 1
+          fi
+        fi
+
+        cd ..
+
+        CONFIG_PATH="./common/arch/arm64/configs/gki_defconfig"
+        echo "Checking and enabling CONFIG_NTSYNC..."
+
+        # Normalize to a single built-in entry so existing =m / =n lines do not conflict.
+        sed -i '/^# CONFIG_NTSYNC is not set$/d; /^CONFIG_NTSYNC=/d' "$CONFIG_PATH"
+        echo "CONFIG_NTSYNC=y" >> "$CONFIG_PATH"
+        echo "Enabled CONFIG_NTSYNC=y"
+
+        echo "=== NTSync patch and config injection complete ==="

@@ -1,0 +1,238 @@
+name: "Apply Compatibility & Security Fixes"
+description: "Apply Stock Config spoofing, CVE-2026-43499, glibc 2.38, OnePlus 8E, Unicode bypass, and 6.6 Wi-Fi/BT fixes"
+
+inputs:
+  android_version:
+    required: true
+    type: string
+  kernel_version:
+    required: true
+    type: string
+  sub_level:
+    required: true
+    type: string
+  cve_2026_43499_patch:
+    required: false
+    default: "false"
+    type: string
+  supp_op:
+    required: false
+    default: "false"
+    type: string
+  enable_susfs:
+    required: false
+    default: "true"
+    type: string
+
+runs:
+  using: "composite"
+  steps:
+    - name: Apply Stock Config spoofing
+      shell: bash
+      run: |
+        STOCK_SRC="$GITHUB_WORKSPACE/config/stock_defconfig"
+        STOCK_DST="$KERNEL_ROOT/common/arch/arm64/configs/stock_defconfig"
+
+        if [ ! -f "$STOCK_SRC" ]; then
+          echo "$STOCK_SRC not found, skipping Stock Config spoofing."
+          exit 0
+        fi
+
+        mkdir -p "$(dirname "$STOCK_DST")"
+        if ! cp "$STOCK_SRC" "$STOCK_DST"; then
+          echo "::error::Failed to copy stock_defconfig: $STOCK_SRC -> $STOCK_DST"
+          exit 1
+        fi
+        echo "Copied stock_defconfig -> $STOCK_DST"
+
+        NEW_RULE='$(obj)/config_data: arch/arm64/configs/stock_defconfig FORCE'
+        OLD_RULE='$(obj)/config_data: $(KCONFIG_CONFIG) FORCE'
+        TARGET_MAKEFILE="$KERNEL_ROOT/common/kernel/Makefile"
+
+        if [ ! -f "$TARGET_MAKEFILE" ]; then
+          echo "::error::$TARGET_MAKEFILE not found"
+          exit 1
+        fi
+
+        if grep -qF "$NEW_RULE" "$TARGET_MAKEFILE"; then
+          echo "config_data rule already points to stock_defconfig, skipping."
+        elif grep -qF "$OLD_RULE" "$TARGET_MAKEFILE"; then
+          sed -i 's|$(obj)/config_data: $(KCONFIG_CONFIG) FORCE|$(obj)/config_data: arch/arm64/configs/stock_defconfig FORCE|' "$TARGET_MAKEFILE"
+          echo "Updated config_data rule in $TARGET_MAKEFILE"
+        else
+          echo "::error::Rule not found in $TARGET_MAKEFILE: $OLD_RULE"
+          exit 1
+        fi
+
+    - name: Extract actual sublevel
+      shell: bash
+      run: |
+        ACTUAL_SUBLEVEL="${{ inputs.sub_level }}"
+        if [[ -f "$KERNEL_ROOT/common/Makefile" ]]; then
+          EXTRACTED=$(grep '^SUBLEVEL = ' "$KERNEL_ROOT/common/Makefile" | awk '{print $3}')
+          [[ -n "$EXTRACTED" ]] && ACTUAL_SUBLEVEL="$EXTRACTED"
+        fi
+        echo "ACTUAL_SUBLEVEL=$ACTUAL_SUBLEVEL" >> $GITHUB_ENV
+        echo "Actual sublevel: $ACTUAL_SUBLEVEL"
+
+    - name: Apply CVE-2026-43499 rtmutex fix chain
+      if: inputs.cve_2026_43499_patch == 'true'
+      shell: bash
+      working-directory: ${{ env.KERNEL_ROOT }}/common
+      run: |
+        bash "$GITHUB_WORKSPACE/security_patch/apply_cve_2026_43499.sh" \
+          "${{ inputs.kernel_version }}" \
+          "$ACTUAL_SUBLEVEL" \
+          "$GITHUB_WORKSPACE/security_patch"
+
+    - name: Fix glibc 2.38 compatibility
+      shell: bash
+      working-directory: ${{ env.KERNEL_ROOT }}/common
+      run: |
+        RAW_SUB="$ACTUAL_SUBLEVEL"
+        [[ ! "$RAW_SUB" =~ ^[0-9]+$ ]] && CURRENT_SUB=99999 || CURRENT_SUB=$RAW_SUB
+
+        GLIBC_VERSION=$(ldd --version 2>/dev/null | head -n 1 | awk '{print $NF}')
+        if [ "$(printf '%s\n' "2.38" "$GLIBC_VERSION" | sort -V | head -n1)" = "2.38" ]; then
+          if [ -f tools/bpf/resolve_btfids/Makefile ] \
+            && grep -q '\$(Q)\$(MAKE) -C \$(SUBCMD_SRC) OUTPUT=\$(abspath \$(dir \$@))\/ \$(abspath \$@)' tools/bpf/resolve_btfids/Makefile; then
+            echo "Applying glibc >= 2.38 resolve_btfids Makefile EXTRA_CFLAGS fix..."
+            sed -i '/\$(Q)\$(MAKE) -C \$(SUBCMD_SRC) OUTPUT=\$(abspath \$(dir \$@))\/ \$(abspath \$@)/s//$(Q)$(MAKE) -C $(SUBCMD_SRC) EXTRA_CFLAGS="$(CFLAGS)" OUTPUT=$(abspath $(dir $@))\/ $(abspath $@)/' tools/bpf/resolve_btfids/Makefile
+          fi
+
+          if [[ "${{ inputs.android_version }}" == "android13" && "${{ inputs.kernel_version }}" == "5.10" && $CURRENT_SUB -le 186 ]] ||
+             [[ "${{ inputs.android_version }}" == "android13" && "${{ inputs.kernel_version }}" == "5.15" && $CURRENT_SUB -le 119 ]] ||
+             [[ "${{ inputs.android_version }}" == "android14" && "${{ inputs.kernel_version }}" == "6.1" && $CURRENT_SUB -le 43 ]]; then
+            if [[ "${{ inputs.kernel_version }}" == "5.10" || "${{ inputs.kernel_version }}" == "5.15" ]]; then
+              sed -i '/char \*buf = NULL;/a int i;' tools/lib/subcmd/parse-options.c 2>/dev/null || true
+              sed -i 's/for (int i = 0; subcommands\[i\]; i++) {/for (i = 0; subcommands[i]; i++) {/' tools/lib/subcmd/parse-options.c 2>/dev/null || true
+              sed -i '/if (subcommands) {/a int i;' tools/lib/subcmd/parse-options.c 2>/dev/null || true
+              sed -i 's/for (int i = 0; subcommands\[i\]; i++)/for (i = 0; subcommands[i]; i++)/' tools/lib/subcmd/parse-options.c 2>/dev/null || true
+            fi
+          fi
+        fi
+
+    - name: Add OnePlus 8E processor support
+      if: inputs.supp_op == 'true'
+      shell: bash
+      working-directory: ${{ env.KERNEL_ROOT }}/common/drivers
+      run: |
+        echo "Adding OnePlus 8E support patch..."
+        if [ -f "$GITHUB_WORKSPACE/hmbird_patch.c" ]; then
+          cp "$GITHUB_WORKSPACE/hmbird_patch.c" hmbird_patch.c
+        else
+          curl -LSs "https://github.com/AweYuki/GKI_KernelSU_SUSFS/raw/refs/heads/dev/hmbird_patch.c" -o hmbird_patch.c
+        fi
+        echo "obj-y += hmbird_patch.o" >> Makefile
+
+    - name: Apply Unicode bypass fix
+      if: inputs.enable_susfs == 'true'
+      shell: bash
+      working-directory: ${{ env.KERNEL_ROOT }}/common
+      run: |
+        if [ -f fs/unicode/mkutf8data.c ] && ! grep -q 'ignore_init' fs/unicode/mkutf8data.c; then
+          echo "Unicode bypass fix already present in source, skipping patch"
+          exit 0
+        fi
+        if [ "${{ inputs.kernel_version }}" = "5.10" ] || [ "${{ inputs.kernel_version }}" = "5.15" ]; then
+          patch -p1 --forward < "$ACTION_BUILD/patches/unicode_bypass_fix_6.1-.patch" || true
+        else
+          patch -p1 --forward < "$ACTION_BUILD/patches/unicode_bypass_fix_6.1+.patch" || true
+        fi
+
+    - name: Fix 6.6 Wi-Fi/Bluetooth compatibility (Samsung + Xiaomi)
+      if: inputs.kernel_version == '6.6'
+      shell: bash
+      working-directory: ${{ env.KERNEL_ROOT }}/common
+      run: |
+        ensure_line_once() {
+          local file="$1"
+          local line="$2"
+          if [ ! -f "$file" ]; then
+            echo "::error::File not found: $file"
+            exit 1
+          fi
+          if ! grep -qF "$line" "$file"; then
+            echo "$line" >> "$file"
+          fi
+        }
+
+        GALAXY_SYMBOL_LIST="android/abi_gki_aarch64_galaxy"
+        XIAOMI_SYMBOL_LIST="android/abi_gki_aarch64_xiaomi"
+        DRIVERS_MAKEFILE="drivers/Makefile"
+        MIN_KDP_SRC="$KERNEL_PATCHES/samsung/min_kdp/min_kdp.c"
+        MIN_KDP_PATCH="$KERNEL_PATCHES/samsung/min_kdp/add-min_kdp-symbols.patch"
+        MIN_KDP_DST="drivers/min_kdp.c"
+
+        ensure_line_once "$GALAXY_SYMBOL_LIST" "kdp_set_cred_non_rcu"
+        ensure_line_once "$GALAXY_SYMBOL_LIST" "kdp_usecount_dec_and_test"
+        ensure_line_once "$GALAXY_SYMBOL_LIST" "kdp_usecount_inc"
+
+        if [ ! -f "$MIN_KDP_PATCH" ]; then
+          echo "::error::Patch not found: $MIN_KDP_PATCH"
+          exit 1
+        fi
+        if patch -p1 --dry-run < "$MIN_KDP_PATCH" >/dev/null 2>&1; then
+          patch -p1 --no-backup-if-mismatch < "$MIN_KDP_PATCH"
+        elif [ -f android/abi_gki_aarch64.stg ]; then
+          echo "Rigid min_kdp .stg patch drifted upstream; falling back to idempotent STG symbol insert"
+          python3 - android/abi_gki_aarch64.stg <<'PYEOF'
+        import sys
+        stg_path = sys.argv[1]
+        with open(stg_path) as f:
+            src = f.read()
+        def ensure_before(anchor, block, label):
+            global src
+            if label in src:
+                return
+            if anchor in src:
+                src = src.replace(anchor, block + anchor, 1)
+            else:
+                if not src.endswith('\n'):
+                    src += '\n'
+                src += block
+        func1 = ('function {\n  id: 0x1e5195df\n  return_type_id: 0x48b5725f\n'
+                 '  parameter_id: 0x3d551c03\n  parameter_id: 0x6720d32f\n}\n')
+        func2 = ('function {\n  id: 0xc18e39fb\n  return_type_id: 0x4585663f\n'
+                 '  parameter_id: 0x3d551c03\n}\n')
+        elf1 = ('elf_symbol {\n  id: 0xb0801f6e\n  name: "kdp_set_cred_non_rcu"\n  is_defined: true\n'
+                '  symbol_type: FUNCTION\n  crc: 0x738bae5e\n  type_id: 0x1e5195df\n'
+                '  full_name: "kdp_set_cred_non_rcu"\n}\n')
+        elf2 = ('elf_symbol {\n  id: 0x3037c5bc\n  name: "kdp_usecount_dec_and_test"\n  is_defined: true\n'
+                '  symbol_type: FUNCTION\n  crc: 0xda582aa5\n  type_id: 0xc18e39fb\n'
+                '  full_name: "kdp_usecount_dec_and_test"\n}\n')
+        elf3 = ('elf_symbol {\n  id: 0x8334a496\n  name: "kdp_usecount_inc"\n  is_defined: true\n'
+                '  symbol_type: FUNCTION\n  crc: 0xfb342499\n  type_id: 0x1fcd1693\n'
+                '  full_name: "kdp_usecount_inc"\n}\n')
+        ensure_before('function {\n  id: 0x1e571002', func1, 'id: 0x1e5195df')
+        ensure_before('function {\n  id: 0xc18f1240', func2, 'id: 0xc18e39fb')
+        elf_anchor = 'elf_symbol {\n  id: 0x493ce9fc\n  name: "loops_per_jiffy"'
+        for block, label in [(elf1, '"kdp_set_cred_non_rcu"'), (elf2, '"kdp_usecount_dec_and_test"'), (elf3, '"kdp_usecount_inc"')]:
+            ensure_before(elf_anchor, block, label)
+        iface_ids = ['0xb0801f6e', '0x3037c5bc', '0x8334a496']
+        missing = [i for i in iface_ids if f'symbol_id: {i}' not in src]
+        if missing:
+            lines = [f'  symbol_id: {i}\n' for i in missing]
+            anchor = '  symbol_id: 0xc750a072\n'
+            if anchor in src:
+                src = src.replace(anchor, anchor + ''.join(lines), 1)
+            else:
+                idx = src.find('interface {')
+                end = src.find('\n}', idx) if idx != -1 else -1
+                if end != -1:
+                    src = src[:end + 1] + ''.join(lines) + src[end + 1:]
+        with open(stg_path, 'w') as f:
+            f.write(src)
+        PYEOF
+        else
+          echo "min_kdp symbols patch already applied or STG absent, skipping."
+        fi
+
+        if [ ! -f "$MIN_KDP_SRC" ]; then
+          echo "::error::File not found: $MIN_KDP_SRC"
+          exit 1
+        fi
+        cp "$MIN_KDP_SRC" "$MIN_KDP_DST"
+        ensure_line_once "$DRIVERS_MAKEFILE" "obj-y += min_kdp.o"
+
+        ensure_line_once "$XIAOMI_SYMBOL_LIST" "device_find_any_child"

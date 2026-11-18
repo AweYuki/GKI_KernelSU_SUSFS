@@ -1,0 +1,80 @@
+name: "Apply USB Arsenal Patches"
+description: "Clone ravindu644/USB-Arsenal, apply kernel-specific gadget patches, and enable USB/NAT configs"
+
+inputs:
+  android_version:
+    required: true
+    type: string
+  kernel_version:
+    required: true
+    type: string
+
+runs:
+  using: "composite"
+  steps:
+    - name: Apply USB Arsenal patches and gadget configs
+      shell: bash
+      working-directory: ${{ env.KERNEL_ROOT }}/common
+      run: |
+        set -euo pipefail
+        echo "=== Applying WildKernels USB Arsenal patches ==="
+
+        USB_DIR=/tmp/USB-Arsenal
+        for attempt in 1 2 3 4 5; do
+          rm -rf "$USB_DIR"
+          if git clone --depth 1 https://github.com/ravindu644/USB-Arsenal.git "$USB_DIR"; then
+            break
+          fi
+          [ "$attempt" -eq 5 ] && { echo "::error::Failed to clone USB-Arsenal after 5 attempts" >&2; exit 1; }
+          sleep 5
+        done
+
+        case "${{ inputs.kernel_version }}" in
+          5.10) PATCH_DIR=5.10 ;;
+          5.15|6.1) PATCH_DIR=5.15 ;;
+          6.6) PATCH_DIR=6.6 ;;
+          6.12) PATCH_DIR=6.12 ;;
+          *)
+            echo "::error::No USB-Arsenal patch set mapped for kernel ${{ inputs.kernel_version }}" >&2
+            exit 1
+            ;;
+        esac
+
+        SRC="$USB_DIR/kernel-patches/$PATCH_DIR"
+        CHECK="$GITHUB_WORKSPACE/scripts/build_helpers/usb_arsenal_already_present.py"
+        mapfile -t PATCHES < <(find "$SRC" -maxdepth 1 -name '*.patch' | sort)
+        [ "${#PATCHES[@]}" -gt 0 ] || { echo "::error::No USB-Arsenal patches found under $SRC" >&2; exit 1; }
+
+        APPLIED=0
+        SKIPPED=0
+        FAILED=()
+        for p in "${PATCHES[@]}"; do
+          name="$(basename "$p")"
+          if patch -p1 --forward --dry-run -f < "$p" >/dev/null 2>&1; then
+            patch -p1 --forward -f < "$p" >/dev/null
+            APPLIED=$((APPLIED + 1))
+            echo "  applied: $name"
+          elif python3 "$CHECK" "$p"; then
+            SKIPPED=$((SKIPPED + 1))
+            echo "  skipped (already in tree): $name"
+          else
+            FAILED+=("$name")
+            echo "::warning::USB-Arsenal patch did not apply cleanly: $name"
+          fi
+        done
+        echo "USB-Arsenal: ${APPLIED} applied, ${SKIPPED} already present, ${#FAILED[@]} skipped"
+        if [ "$APPLIED" -eq 0 ] && [ "$SKIPPED" -eq 0 ]; then
+          echo "::error::No USB-Arsenal patch applied for ${{ inputs.android_version }}-${{ inputs.kernel_version }}" >&2
+          exit 1
+        fi
+
+        set_cfg_if_defined() {
+          local sym="$1"
+          if grep -RqsE --include='Kconfig*' "^[[:space:]]*(menuconfig|config)[[:space:]]+${sym}([[:space:]]|$)" .; then
+            sed -i "/^# CONFIG_${sym} is not set$/d; /^CONFIG_${sym}=/d" "$DEFCONFIG"
+            echo "CONFIG_${sym}=y" >> "$DEFCONFIG"
+          fi
+        }
+        for sym in USB_CONFIGFS USB_CONFIGFS_MASS_STORAGE USB_CONFIGFS_F_HID USB_CONFIGFS_NCM USB_CONFIGFS_RNDIS IP_NF_NAT IP_NF_TARGET_MASQUERADE; do
+          set_cfg_if_defined "$sym"
+        done
