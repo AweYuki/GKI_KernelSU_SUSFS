@@ -1,7 +1,8 @@
-"""增量更新 GKI 内核版本数据。
+"""Incrementally update GKI kernel version data.
 
-读取现有 JSON 数据，仅抓取缺失的月份，同时更新 LTS 版本，
-并按上游实际位置（活跃 / deprecated/ / 发布 tag）刷新每条记录的 ref 字段。
+Reads existing JSON data, fetches only missing months, updates the LTS version,
+and refreshes the ref field of each entry according to its actual upstream location
+(active / deprecated/ / release tag).
 """
 
 import json
@@ -20,7 +21,7 @@ def update_target(android_ver: str, kernel_ver: str,
                   date_start: str, date_end: str | None,
                   dep_cutoff: str,
                   refs: tuple[set[str], set[str]] | None = None) -> bool:
-    """增量更新单个目标，返回是否有数据变更"""
+    """Incrementally update a single target and return whether any data changed."""
     path = json_path(android_ver, kernel_ver)
     end = get_end_date(date_end)
     changed = False
@@ -29,7 +30,7 @@ def update_target(android_ver: str, kernel_ver: str,
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
         entries = data.get("entries", [])
-        # 同步 deprecated_cutoff（来源从 TARGETS，不在 JSON 里手动维护）
+        # Sync deprecated_cutoff (sourced from TARGETS, not maintained manually in JSON)
         if data.get("deprecated_cutoff", "") != dep_cutoff:
             data["deprecated_cutoff"] = dep_cutoff
             changed = True
@@ -43,7 +44,7 @@ def update_target(android_ver: str, kernel_ver: str,
         }
         entries = []
 
-    # 扫描完整日期范围并排除已有月份，以补齐历史缺失数据
+    # Scan the full date range and exclude existing months to backfill missing historical data
     existing_dates = {e["date"] for e in entries}
     all_dates = make_date_range(date_start, end)
     new_dates = [d for d in all_dates if d not in existing_dates]
@@ -75,7 +76,7 @@ def update_target(android_ver: str, kernel_ver: str,
 
     entries.sort(key=lambda e: e["date"])
 
-    # 上游位置会随时间变化（活跃 -> deprecated/ -> 仅剩 tag），每次全量刷新
+    # Upstream locations change over time (active -> deprecated/ -> tag only), so refresh all entries on every run
     if refs is not None:
         ref_changes = refresh_refs(entries, android_ver, kernel_ver, refs)
         if ref_changes:
@@ -118,7 +119,7 @@ def main():
     any_changed = False
     refs = fetch_refs()
     if refs is None:
-        # refs 接口偶尔失败时不中断整次更新，只跳过 ref 刷新
+        # Do not abort the entire update on transient refs endpoint failures; only skip ref refresh
         print("WARNING: failed to fetch upstream refs, ref fields will not be refreshed this run")
     else:
         print(f"Fetched upstream refs: {len(refs[0])} heads, {len(refs[1])} tags")
@@ -138,5 +139,5 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\nFATAL: {e}", file=sys.stderr)
         sys.exit(1)
-    # 退出码 0 表示有变更，2 表示无变更；异常返回 1
+    # Exit code 0 indicates changes, 2 indicates no changes; 1 on exception
     sys.exit(0 if changed else 2)

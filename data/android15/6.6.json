@@ -1,8 +1,8 @@
 {
   "android_version": "android15",
   "kernel_version": "6.6",
-  "deprecated_cutoff": "",
-  "lts": "6.6.144",
+  "deprecated_cutoff": "2025-08",
+  "lts": "6.6.162",
   "entries": [
     {
       "date": "2024-10",

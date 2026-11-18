@@ -10,20 +10,20 @@ from datetime import datetime
 
 REPO_URL = "https://android.googlesource.com/kernel/common"
 BASE_URL = f"{REPO_URL}/+/refs/heads"
-# gitiles 的 refs 列表接口，一次拿到全部分支名 / tag 名
+# Gitiles refs listing endpoint, fetching all branch / tag names in one request
 REFS_URL = f"{REPO_URL}/+refs"
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 
-# (android版本, 内核版本): (起始日期, 结束日期, deprecated截止日期)
-# 结束日期为 None 表示活跃版本，运行时自动使用当前月份
+# (android_version, kernel_version): (start_date, end_date, deprecated_cutoff_date)
+# An end_date of None denotes an active version, automatically using the current month at runtime
 TARGETS = {
-    ("android12", "5.10"): ("2021-08", "2025-12", "2024-08"),
-    ("android13", "5.15"): ("2022-06", "2025-12", "2024-09"),
-    ("android14", "6.1"):  ("2023-06", None,       "2024-09"),
-    ("android15", "6.6"):  ("2024-10", None,       ""),
-    ("android16", "6.12"): ("2025-06", None,       ""),
+    ("android12", "5.10"): ("2021-08", None, "2025-06"),
+    ("android13", "5.15"): ("2022-06", None, "2025-05"),
+    ("android14", "6.1"):  ("2023-06", None, "2025-08"),
+    ("android15", "6.6"):  ("2024-10", None, "2025-08"),
+    ("android16", "6.12"): ("2025-06", None, "2025-08"),
 }
 
 import binascii
@@ -34,14 +34,14 @@ ERRORS = (urllib.error.HTTPError, urllib.error.URLError,
 
 
 def get_end_date(end: str | None) -> str:
-    """返回结束日期：如果为 None 则使用当前月份"""
+    """Return the end date: uses the current month if None."""
     if end is not None:
         return end
     return datetime.now().strftime("%Y-%m")
 
 
 def make_date_range(start: str, end: str) -> list[str]:
-    """生成从 start 到 end 的 YYYY-MM 列表"""
+    """Generate a list of YYYY-MM strings from start to end."""
     sy, sm = map(int, start.split("-"))
     ey, em = map(int, end.split("-"))
     dates = []
@@ -56,7 +56,7 @@ def make_date_range(start: str, end: str) -> list[str]:
 
 
 def try_fetch(url: str) -> str | None:
-    """尝试请求一个 URL，失败返回 None"""
+    """Attempt to fetch a URL; return None on failure."""
     try:
         with urllib.request.urlopen(url, timeout=20) as resp:
             return base64.b64decode(resp.read()).decode("utf-8", errors="replace")
@@ -65,7 +65,7 @@ def try_fetch(url: str) -> str | None:
 
 
 def fetch_refs() -> tuple[set[str], set[str]] | None:
-    """一次性获取上游全部分支名与 tag 名（不含 refs/heads、refs/tags 前缀），失败返回 None"""
+    """Fetch all upstream branch and tag names at once (without refs/heads or refs/tags prefixes); return None on failure."""
     result = []
     for kind in ("heads", "tags"):
         url = f"{REFS_URL}/{kind}?format=JSON"
@@ -74,9 +74,10 @@ def fetch_refs() -> tuple[set[str], set[str]] | None:
                 raw = resp.read().decode("utf-8", errors="replace")
         except ERRORS:
             return None
-        # gitiles 的 JSON 响应前面带一行防 XSSI 前缀
+        # Gitiles JSON responses start with an anti-XSSI prefix line
         if raw.startswith(")]}'"):
-            raw = raw.split("\n", 1)[1]
+            parts = raw.split("\n", 1)
+            raw = parts[1] if len(parts) > 1 else ""
         try:
             result.append(set(json.loads(raw).keys()))
         except ValueError:
@@ -85,11 +86,11 @@ def fetch_refs() -> tuple[set[str], set[str]] | None:
 
 
 def resolve_ref(branch: str, heads: set[str], tags: set[str]) -> str | None:
-    """按 build.yml 的规则解析月度分支在上游的实际位置：
-    活跃分支 -> refs/heads/<branch>
-    已迁移   -> refs/heads/deprecated/<branch>
-    已删除   -> refs/tags/<branch>_rN（编号最大的发布 tag）
-    都没有   -> None
+    """Resolve the actual upstream location of a monthly branch per build.yml rules:
+    Active branch -> refs/heads/<branch>
+    Migrated      -> refs/heads/deprecated/<branch>
+    Deleted       -> refs/tags/<branch>_rN (release tag with the highest revision number)
+    Not found     -> None
     """
     if branch in heads:
         return f"refs/heads/{branch}"
@@ -108,10 +109,10 @@ def resolve_ref(branch: str, heads: set[str], tags: set[str]) -> str | None:
 def fetch_makefile(android_ver: str, kernel_ver: str, date: str,
                    dep_cutoff: str,
                    refs: tuple[set[str], set[str]] | None = None) -> str | None:
-    """获取日期分支 Makefile。
+    """Fetch the Makefile for a monthly branch.
 
-    提供 refs 时直接按上游实际位置取（含分支已删除时的发布 tag）；
-    否则退回逐个路径试探：优先预期路径，失败再回退。
+    When refs are provided, fetch directly from the resolved upstream location (including release tags when the branch is deleted);
+    otherwise fall back to probing paths one by one: try the expected path first, then fall back.
     """
     branch = f"{android_ver}-{kernel_ver}-{date}"
 
@@ -137,9 +138,9 @@ def fetch_makefile(android_ver: str, kernel_ver: str, date: str,
 
 def refresh_refs(entries: list[dict], android_ver: str, kernel_ver: str,
                  refs: tuple[set[str], set[str]]) -> int:
-    """为每条记录写入 / 更新 ref 字段（上游实际路径），返回变更条数。
+    """Set or update the ref field (actual upstream path) for each entry and return the number of changed entries.
 
-    分支会随时间从活跃迁到 deprecated/ 再被删除，因此每次运行都要全量刷新。
+    Branches migrate over time from active to deprecated/ and are eventually deleted, so refresh all entries on every run.
     """
     heads, tags = refs
     changed = 0
@@ -157,14 +158,14 @@ def refresh_refs(entries: list[dict], android_ver: str, kernel_ver: str,
 
 
 def fetch_lts(android_ver: str, kernel_ver: str) -> str | None:
-    """获取 LTS 分支 Makefile"""
+    """Fetch the LTS branch Makefile."""
     lts_branch = f"{android_ver}-{kernel_ver}-lts"
     url = f"{BASE_URL}/{lts_branch}/Makefile?format=TEXT"
     return try_fetch(url)
 
 
 def parse_version(makefile_text: str) -> tuple[str, str, str] | None:
-    """从 Makefile 提取 VERSION, PATCHLEVEL, SUBLEVEL"""
+    """Extract VERSION, PATCHLEVEL, and SUBLEVEL from a Makefile."""
     vals = {}
     for key in ("VERSION", "PATCHLEVEL", "SUBLEVEL"):
         m = re.search(rf"^{key}\s*=\s*(\d+)", makefile_text, re.MULTILINE)
@@ -175,5 +176,5 @@ def parse_version(makefile_text: str) -> tuple[str, str, str] | None:
 
 
 def json_path(android_ver: str, kernel_ver: str) -> str:
-    """返回对应的 JSON 文件路径"""
+    """Return the corresponding JSON file path."""
     return os.path.join(DATA_DIR, android_ver, f"{kernel_ver}.json")

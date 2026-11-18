@@ -1,7 +1,7 @@
 {
   "android_version": "android16",
   "kernel_version": "6.12",
-  "deprecated_cutoff": "",
+  "deprecated_cutoff": "2025-08",
   "lts": "6.12.117",
   "entries": [
     {
