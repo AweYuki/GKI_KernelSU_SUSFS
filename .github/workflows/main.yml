@@ -580,7 +580,7 @@ jobs:
     env:
       REPO_OWNER: ${{ github.repository_owner }}
       REPO_NAME: ${{ github.event.repository.name }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.MY_GH_TOKEN }}
 
     steps:
       - name: Set display metadata

@@ -38,7 +38,7 @@ jobs:
           fi
           echo "✅ Found Release: ${{ inputs.target_tag }}"
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.MY_GH_TOKEN }}
 
       - name: Fetch original release info
         id: info
@@ -55,7 +55,7 @@ jobs:
           echo "📋 Original title: $(cat original_title.txt)"
           echo "📋 Pre-release: $IS_PRERELEASE"
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.MY_GH_TOKEN }}
 
       - name: Handle Normal type - Mark as verified
         if: inputs.issue_type == 'Normal'
@@ -82,7 +82,7 @@ jobs:
 
           echo "✅ Marked Release as verified (Normal)"
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.MY_GH_TOKEN }}
 
       - name: Handle Bug type
         if: inputs.issue_type == 'Bug'
@@ -109,7 +109,7 @@ jobs:
 
           echo "✅ Updated Release notes (Bug)"
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.MY_GH_TOKEN }}
 
       - name: Handle Critical type - Delete and recreate
         if: inputs.issue_type == 'Critical'
@@ -153,7 +153,7 @@ jobs:
 
           echo "✅ Removed all assets and recreated Release (Critical)"
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.MY_GH_TOKEN }}
 
       - name: Summary
         run: |

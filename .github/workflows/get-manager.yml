@@ -29,7 +29,7 @@ jobs:
       CCACHE_COMPILERCHECK: "%compiler% -dumpmachine; %compiler% -dumpversion"
       CCACHE_NOHASHDIR: "true"
       CCACHE_HARDLINK: "true"
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_TOKEN: ${{ secrets.MY_GH_TOKEN }}
 
     steps:
       - name: 🧐 Debug Workflow Caller Context
@@ -146,7 +146,7 @@ jobs:
           for PAGE in $(seq 1 10); do
             echo "--------------------------------------------------"
             echo "Checking workflow runs page ${PAGE}..."
-            RUNS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "$RUNS_URL&page=$PAGE")
+            RUNS=$(curl -s -H "Authorization: token ${{ secrets.MY_GH_TOKEN }}" "$RUNS_URL&page=$PAGE")
             RUN_COUNT=$(printf '%s' "$RUNS" | jq '.workflow_runs | length')
             if [ "$RUN_COUNT" -eq 0 ]; then
               break
@@ -167,7 +167,7 @@ jobs:
                 continue
               fi
 
-              ARTIFACTS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              ARTIFACTS=$(curl -s -H "Authorization: token ${{ secrets.MY_GH_TOKEN }}" \
                 "https://api.github.com/repos/$REPO/actions/runs/$BUILD_ID/artifacts")
               CANDIDATE_LIST=$(get_manager_artifacts "$ARTIFACTS")
               if [ -z "$CANDIDATE_LIST" ]; then
@@ -199,7 +199,7 @@ jobs:
             SAFE_NAME=$(echo "$NAME" | tr '/ ' '__')
             ZIP_NAME="${{ inputs.kernelsu_variant }}-${SAFE_NAME}(${{ env.KSU_VERSION }}).zip"
             echo "Downloading $NAME -> $ZIP_NAME"
-            curl -L -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -o "$ZIP_NAME" "$URL"
+            curl -L -H "Authorization: token ${{ secrets.MY_GH_TOKEN }}" -o "$ZIP_NAME" "$URL"
             mkdir -p "manager-artifacts/$SAFE_NAME"
             unzip -o "$ZIP_NAME" -d "manager-artifacts/$SAFE_NAME"
             rm -rf "$ZIP_NAME"
