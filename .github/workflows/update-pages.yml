@@ -2,7 +2,7 @@ name: Update Data & Deploy Pages
 
 on:
   schedule:
-    - cron: '0 8 */3 * *'  # 每 3 天 UTC 8:00
+    - cron: '0 8 */3 * *'  # Runs every 3 days at 08:00 UTC
   workflow_dispatch:
   push:
     branches: [dev]
@@ -10,8 +10,9 @@ on:
       - 'data/**'
       - 'web/**'
       - 'scripts/**'
-      # scripts/susfs_fixes/ 是构建期由 build.yml 调用的补丁修复脚本，与版本数据抓取无关
+      # scripts/susfs_fixes/ and scripts/build_helpers/ contain build-time patch/config helpers called by build.yml, unrelated to version data fetching
       - '!scripts/susfs_fixes/**'
+      - '!scripts/build_helpers/**'
 
 permissions:
   contents: write
@@ -30,9 +31,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
-          python-version: '3.12'
+          python-version: '3.13'
 
       - name: Run incremental update
         working-directory: scripts
@@ -60,7 +61,7 @@ jobs:
           fi
 
   deploy-pages:
-    if: ${{ github.repository == 'zzh20188/GKI_KernelSU_SUSFS' }}
+    if: ${{ github.repository == 'AweYuki/GKI_KernelSU_SUSFS' }}
     needs: update-data
     runs-on: ubuntu-24.04
     environment:
@@ -77,27 +78,27 @@ jobs:
       - name: Copy data to web directory
         run: cp -r data/ web/data/
 
-      # 构建前端资源（webpack 打包 JS/SCSS → dist/）
-      - uses: actions/setup-node@v4
+      # Build frontend assets (webpack bundles JS/SCSS -> dist/)
+      - uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Build web assets
         working-directory: web
         run: npm ci && npx webpack --mode production
 
-      # Pages 产物只需要页面、dist/、data/ 与 assets/，node_modules 有 40MB 以上，上传前清掉
+      # Pages artifact only needs HTML pages, dist/, data/, and assets/; remove node_modules (40MB+) before upload
       - name: Trim Pages artifact
         run: rm -rf web/node_modules
 
       - name: Setup Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: web
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
