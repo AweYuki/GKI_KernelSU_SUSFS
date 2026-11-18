@@ -1,9 +1,9 @@
-// ===== 对话框：构建参数「参数单」与公告「号外」，手机为底部抽屉 =====
+// ===== Dialogs: build parameter sheet and announcement modal (bottom sheet on mobile) =====
 
 @use 'mixins' as *;
 
 .dialog {
-  // 原生 <dialog>：居中、浮层色、结构线边框
+  // Native <dialog>: centered overlay surface with structural rule border
   border: 1px solid var(--rule);
   border-radius: var(--r-2);
   background: var(--overlay);
@@ -28,7 +28,7 @@
   }
 
   @include mobile {
-    // 底部抽屉
+    // Bottom sheet drawer
     width: 100vw;
     max-width: none;
     max-height: 92vh;
@@ -57,7 +57,7 @@
   to { opacity: 1; }
 }
 
-// 抽屉顶部拖拽指示线
+// Top drag handle bar for mobile bottom sheet
 .dialog__grip {
   display: none;
   width: 32px;
@@ -150,7 +150,7 @@
   @include mobile { padding: var(--sp-2) var(--sp-4) var(--sp-4); }
 }
 
-// 状态行
+// Status lines
 .dialog__status {
   display: flex;
   flex-direction: column;
@@ -202,10 +202,10 @@
   }
 }
 
-// 规格表（复用章首页 spec 样式）
+// Parameter spec table (reuses chapter `.spec` styles)
 .dialog .spec { margin-top: var(--sp-2); }
 
-// 参数行的「复制」：静止时低对比常显，悬停/聚焦升到朱砂
+// Row-level "Copy" button: low-contrast at rest, elevates to vermilion on hover / focus
 .spec__row--copyable {
   .spec__copy {
     @include copy-button;
@@ -232,7 +232,7 @@
   min-width: 0;
 }
 
-// 命令块：两套主题都是深底，是全站唯一的「终端」信号
+// Terminal command blocks: dark background in both themes as the sole terminal cue sitewide
 .cmd {
   margin-top: var(--sp-4);
 }
@@ -304,7 +304,7 @@
   margin-top: var(--sp-3);
 }
 
-// ---- 公告 ----
+// ---- Announcement modal ----
 
 .dialog--announce {
   width: min(520px, calc(100vw - 32px));
@@ -341,7 +341,7 @@
   margin-top: var(--sp-2);
 }
 
-// 公告正文 Markdown
+// Announcement body Markdown typography
 .md {
   font-size: var(--fs-15);
   line-height: 1.6;
@@ -444,7 +444,7 @@
   flex-wrap: wrap;
 }
 
-// 自绘复选框
+// Custom-styled checkbox
 .check {
   display: inline-flex;
   align-items: center;

@@ -1,5 +1,5 @@
 /**
- * 回到顶部按钮模块
+ * Back-to-top button module.
  */
 
 import { prefersReducedMotion } from './utils.js';

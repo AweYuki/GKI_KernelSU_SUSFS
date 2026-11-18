@@ -1,5 +1,5 @@
 /**
- * 构建参数「参数单」：原生 <dialog>，点击版本行或 LTS 打开
+ * Build parameter sheet modal: native <dialog>, opened by clicking a release row or LTS button.
  */
 
 import { t } from './i18n.js';
@@ -36,7 +36,7 @@ function cmdBlock(label, what, cmd, hint) {
 }
 
 /**
- * 打开参数单
+ * Open the build parameter dialog.
  * @param {object} p  { android, kernel, sublevel, patch, version, deprecated, susfs, isLts, susfsMinKernel, trigger }
  */
 export function showParams(p) {
@@ -44,12 +44,12 @@ export function showParams(p) {
   var manifestBranch = 'common-' + branch;
   var repoInitCmd = 'repo init --depth=1 -u ' + LINKS.aospManifest + ' -b ' + manifestBranch + ' --repo-rev=' + REPO_REV;
   var susfsBranch = 'gki-' + p.android + '-' + p.kernel;
-  // 有探测数据时，克隆命令指向探测实际用的仓库（SukiSU 用 ShirkNeko fork）
+  // When probe data is present, point the clone command at the repository actually used by the probe
   var susfsRepo = /^https?:\/\//.test(p.probeRepo || '') ? p.probeRepo.replace(/\.git$/, '') : LINKS.susfs;
   var susfsCloneCmd = 'git clone ' + susfsRepo + '.git -b ' + susfsBranch;
   var version = p.version || (p.kernel + '.' + p.sublevel);
 
-  // 上游实际位置：优先用数据里的 ref；LTS 与缺 ref 的条目退回按分支名猜测
+  // Upstream ref location: prefer `ref` from JSON data; fall back to branch-name inference for LTS or entries missing `ref`
   var ref = p.ref || '';
   var refKind = refKindOf(ref);
   if (refKind === 'unknown') {
@@ -58,8 +58,8 @@ export function showParams(p) {
   var sourceUrl = LINKS.aospCommon + '/+/' + ref;
   var tagName = refKind === 'tag' ? ref.replace(/^refs\/tags\//, '') : '';
 
-  // 与 build.yml 一致：分支已迁到 deprecated/ 时改写 manifest 里的分支名；
-  // 分支已被删除时把 manifest 的 revision 指向发布 tag
+  // Matches build.yml: rewrite branch path in manifest when moved under deprecated/,
+  // or point manifest revision at the release tag when the monthly branch was deleted upstream
   var manifestFixCmd = '';
   var manifestHint = '';
   if (refKind === 'deprecated') {
@@ -79,7 +79,7 @@ export function showParams(p) {
   if (p.isLts) status += '<div class="status-line"><span>' + esc(fmt(t.statusLts, { branch: branch })) + '</span></div>';
   if (p.deprecated) status += '<div class="status-line status-line--dep"><span>' + esc(t.statusDep) + '</span></div>';
   if (p.probe) {
-    // 有探测数据：直接给出原始补丁的 rej 数与编译结果
+    // Probe data available: show exact raw-patch .rej count and build verdict
     var probeVars = { rej: p.probeRej || 0, variant: p.probeVariant || '?', date: p.probeDate || '?', commit: p.probeCommit || '?' };
     if (p.probe === 'clean') status += '<div class="status-line status-line--susfs"><span>' + esc(fmt(t.statusProbeClean, probeVars)) + '</span></div>';
     else if (p.probe === 'built_with_rej') status += '<div class="status-line status-line--susfs-rej"><span>' + esc(fmt(t.statusProbeRej, probeVars)) + '</span></div>';
@@ -135,13 +135,13 @@ export function hideParams() {
 export function initModal() {
   closeBtn.addEventListener('click', hideParams);
 
-  // 点击遮罩关闭：只有点在 dialog 元素自身（内容区之外）时
+  // Backdrop click to dismiss: only when clicking the <dialog> element itself (outside content)
   dialog.addEventListener('click', function (e) {
     if (e.target === dialog) hideParams();
   });
 
   dialog.addEventListener('close', function () {
-    // 关闭后焦点回到触发行，并给该行留下「刚看过」的朱砂左边线
+    // Restore focus to the trigger row on close and mark it with the accent left border
     if (lastTrigger) {
       document.querySelectorAll('.row.is-visited').forEach(function (r) { r.classList.remove('is-visited'); });
       var row = lastTrigger.closest('.row');
@@ -150,7 +150,7 @@ export function initModal() {
     }
   });
 
-  // 事件委托：版本行与 LTS 按钮
+  // Event delegation for release rows and LTS button
   document.addEventListener('click', function (e) {
     var btn = e.target.closest('.row__btn, .chapter__lts');
     if (!btn) return;

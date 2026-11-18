@@ -1,11 +1,11 @@
 /**
- * 渲染模块：分支页签、章首页（大数字 / 规格表 / 图注 / 刻度尺）、账册列表
+ * Rendering module: branch tabs, chapter header (display numeral / spec table / legend / month ruler), and release ledger.
  */
 
 import { t, lang } from './i18n.js';
 import { esc, fmt, prefersReducedMotion, getStored, setStored } from './utils.js';
 
-// 探测来源说明（变体 / 日期 / susfs4ksu 提交），供图注复用
+// Format probe provenance note (variant / date / susfs4ksu commit) for reuse in legend items
 function probeSource(m) {
   if (!m.probe) return '';
   return fmt(t.probeSource, {
@@ -16,7 +16,7 @@ function probeSource(m) {
 }
 
 var activeKey = null;
-// 用无原型对象存分支模型，避免 #constructor 之类的 hash 命中 Object.prototype
+// Store branch models in a null-prototype map so hashes like #constructor cannot collide with Object.prototype
 var modelsByKey = Object.create(null);
 var onActivate = null;
 var mobileQuery = window.matchMedia ? window.matchMedia('(max-width: 767px)') : null;
@@ -25,7 +25,7 @@ function isMobile() {
   return !!(mobileQuery && mobileQuery.matches);
 }
 
-// ---------- 分支页签 ----------
+// ---------- Branch tabs ----------
 
 export function renderTabs(models, activateCb) {
   onActivate = activateCb;
@@ -58,7 +58,7 @@ export function renderTabs(models, activateCb) {
   indicator.setAttribute('aria-hidden', 'true');
   tabsEl.appendChild(indicator);
 
-  // 方向键切换分支
+  // Switch branches via Left/Right/Home/End keys
   tabsEl.addEventListener('keydown', function (e) {
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && e.key !== 'Home' && e.key !== 'End') return;
     var tabs = Array.prototype.slice.call(tabsEl.querySelectorAll('.tab'));
@@ -74,13 +74,13 @@ export function renderTabs(models, activateCb) {
   });
 
   window.addEventListener('resize', function () { moveIndicator(); });
-  // 字体异步到达后页签宽度会变，重算指示线位置
+  // Recalculate indicator position once web fonts finish loading and tab widths settle
   if (document.fonts && document.fonts.ready) {
     document.fonts.ready.then(function () { moveIndicator(); });
   }
 }
 
-// 页签底部 2px 微刻度尺：分支整条时间线的横向缩略
+// 2px micro-ruler at the bottom of each tab: horizontal miniature of the branch timeline
 function buildMicroRuler(m) {
   if (!m.months.length) return '';
   var cells = m.months.map(function (mo) {
@@ -105,7 +105,7 @@ function moveIndicator() {
   indicator.style.transform = 'translateX(' + tab.offsetLeft + 'px)';
 }
 
-// 供搜索等改变导航布局的操作调用
+// Exposed for search and other layout-changing operations to realign the tab indicator
 export function refreshIndicator() {
   moveIndicator();
 }
@@ -124,7 +124,7 @@ export function activateBranch(key, updateHash) {
     p.classList.toggle('is-active', p.id === 'panel-' + key);
   });
 
-  // 时间转换器只有一个实例，随当前分支移动到章首页的工具槽
+  // Move the shared time converter instance into the active branch chapter's tools slot
   var tools = document.getElementById('tools');
   var slot = document.querySelector('#panel-' + cssEscape(key) + ' .tools-slot');
   if (tools && slot && tools.parentNode !== slot) slot.appendChild(tools);
@@ -137,7 +137,7 @@ export function activateBranch(key, updateHash) {
   }
 
   if (updateHash) {
-    try { history.replaceState(null, '', '#' + key); } catch (e) { /* file:// 下可能失败 */ }
+    try { history.replaceState(null, '', '#' + key); } catch (e) { /* May fail under file:// */ }
   }
   setStored('last_branch', key);
   if (onActivate) onActivate(m);
@@ -154,7 +154,7 @@ function cssEscape(s) {
   return (window.CSS && CSS.escape) ? CSS.escape(s) : s.replace(/([.:])/g, '\\$1');
 }
 
-// ---------- 面板 ----------
+// ---------- Branch panels ----------
 
 export function renderPanels(models) {
   var content = document.getElementById('content');
@@ -169,12 +169,12 @@ export function renderPanels(models) {
     content.appendChild(panel);
   });
 
-  // 时间转换器实例放进第一个面板的槽里，之后随分支移动
+  // Mount the single time converter instance in the first panel's slot; it moves with active branch changes
   var first = content.querySelector('.tools-slot');
   if (first) first.innerHTML = buildTools();
 }
 
-// ---------- 章首页 ----------
+// ---------- Chapter header ----------
 
 function branchStatus(m) {
   if (m.fullyDeprecated) return { cls: 'is-deprecated', text: t.statusDeprecated };
@@ -204,14 +204,14 @@ function buildChapter(m) {
       specRow(t.latestKernel, m.last ? m.last.kernel : '—') +
     '</dl>';
 
-  // 图注：桌面常显；手机默认收起以让列表首行更早出现
+  // Legend: open by default on desktop; collapsed on mobile so the release ledger appears higher above the fold
   var legend = '<details class="legend-wrap"' + (isMobile() ? '' : ' open') + '>' +
     '<summary class="legend-wrap__summary">' + esc(t.legend) + '</summary>' +
     '<div class="legend">';
   if (m.deprecatedCount > 0) {
     legend += '<div class="legend__item legend__item--dep"><span class="legend__sym legend__sym--dep" aria-hidden="true"></span><span>' + esc(fmt(t.legendDep, { cutoff: m.cutoff })) + '</span></div>';
   }
-  // SUSFS 图注：有探测数据时写明来源；探测结果不连续时只按逐行标记
+  // SUSFS legend: cite probe provenance when present; note per-row marks when probe verdicts are non-contiguous
   var susfsRepoUrl = (m.probe && m.probe.repo) ? m.probe.repo : t.susfsUrl;
   var susfsLink = ' <a class="legend__link" href="' + esc(susfsRepoUrl) + '" target="_blank" rel="noopener">susfs4ksu ↗</a>';
   var probeLink = (m.probe && m.probe.runUrl) ? ' <a class="legend__link" href="' + esc(m.probe.runUrl) + '" target="_blank" rel="noopener">' + esc(t.probeRun) + ' ↗</a>' : '';
@@ -254,7 +254,7 @@ function specRow(label, value, isNumber) {
   return '<div class="spec__row"><dt class="spec__label">' + esc(label) + '</dt><dd class="spec__value' + (isNumber ? ' is-number' : '') + '">' + esc(value) + '</dd></div>';
 }
 
-// 时间转换器（单实例，随分支移动）
+// Time converter widget (single instance, moved across branches)
 function buildTools() {
   return '<details class="tools" id="tools">' +
       '<summary class="tools__summary">' + esc(t.tcTitle) + '</summary>' +
@@ -267,7 +267,7 @@ function buildTools() {
     '</details>';
 }
 
-// 月份刻度尺：整条轨道是一个 Tab 停留点，← → 在有发布的月份间移动，回车跳转
+// Month ruler: the track is a single Tab stop; Left/Right roams across release ticks, Enter jumps to the row
 function buildRuler(m) {
   if (!m.months.length) return '';
   var ticks = m.months.map(function (mo) {
@@ -289,7 +289,7 @@ function buildRuler(m) {
     return '<span class="' + cls.join(' ') + '" aria-hidden="true">' + inner + '</span>';
   }).join('');
 
-  // 年份标签：每年一月（或范围内的第一个月），定位到该格中心
+  // Year labels: placed at every January (plus the very first month in range), aligned to the tick cell center
   var total = m.months.length;
   var years = m.months.map(function (mo, i) {
     if (!(mo.isJan || i === 0)) return '';
@@ -303,12 +303,12 @@ function buildRuler(m) {
     '</div>';
 }
 
-// ---------- 账册 ----------
+// ---------- Release ledger ----------
 
 function buildLedger(m) {
   var status = m.first ? fmt(t.ledgerStatus, { n: m.count, first: m.first.date, last: m.last.date }) : '';
 
-  // 展示为倒序；按（年份, 是否弃用）切组，弃用截止线穿过一年时该年拆成两段
+  // Displayed in reverse chronological order; grouped by (year, deprecated), splitting a year in two if crossed by the cutoff
   var groups = [];
   var rowsDesc = m.rows.slice().reverse();
   rowsDesc.forEach(function (row) {
@@ -320,9 +320,9 @@ function buildLedger(m) {
     g.items.push(row);
   });
 
-  // 规则线位置：在展示顺序里「第一条弃用行」之前、「第一条非兼容行」之前
+  // Rule placement: immediately before the first deprecated row and/or first non-compatible row in display order
   var firstDepRow = rowsDesc.find(function (r) { return r.deprecated; });
-  // 兼容线只在「从某行起全部兼容」时才画（探测结果不连续时只逐行标记）
+  // Draw the SUSFS rule only when compatibility is contiguous up to the latest release
   var firstNonSusfsRow = m.hasSusfs && !m.allSusfs && m.susfsContiguous
     ? rowsDesc.find(function (r) { return !r.susfs; })
     : null;
@@ -367,7 +367,7 @@ function buildLedger(m) {
 
 function buildRule(m, isDep, isSus, depRuleId, susfsRuleId, row) {
   var cls = 'rule ' + (isDep && isSus ? 'rule--both' : isDep ? 'rule--dep' : 'rule--susfs');
-  // SUSFS 线落在弃用区内时，折叠弃用行需要一并隐藏它
+  // When the SUSFS rule falls inside the deprecated zone, collapsing deprecated rows should hide it as well
   if (isSus && !isDep && row.deprecated) cls += ' is-in-dep';
   var html = '<li class="' + cls + '">';
   if (isSus) {
@@ -408,7 +408,7 @@ function buildRow(m, row, depRuleId) {
   if (row.isLts) marks += '<span class="mark mark--lts">' + esc(t.lts) + '</span>';
   if (row.latest) marks += '<span class="mark mark--latest">' + esc(t.newBadge) + '</span>';
 
-  // 搜索用的状态词：中英文标签与固定英文关键字都能命中
+  // Search status keywords: match both localized labels and fixed English keywords
   var tags = [];
   if (row.deprecated) tags.push('deprecated', t.deprecated);
   if (row.susfs) tags.push('susfs', t.susfsCompat);
@@ -429,7 +429,7 @@ function buildRow(m, row, depRuleId) {
   '</li>';
 }
 
-// ---------- 账册状态：弃用折叠 ----------
+// ---------- Ledger state: deprecated-rows collapse ----------
 
 var COLLAPSE_KEY = 'ledger_collapse_deprecated';
 
@@ -446,7 +446,7 @@ export function applyCollapse(ledger, collapsed, hasQuery) {
     btn.textContent = fmt(collapsed ? t.expand : t.collapse, { n: n });
     btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
   }
-  // 折叠后整组都是弃用行的年份组一并隐藏；含规则线的组保留，否则「展开」按钮会一起消失
+  // When collapsed, hide year groups composed entirely of deprecated rows; keep any group containing a rule so the Expand toggle remains visible
   ledger.querySelectorAll('.year').forEach(function (g) {
     if (!effective) { g.hidden = false; return; }
     var keep = !!g.querySelector('.rule') || g.querySelectorAll('.row:not(.is-deprecated)').length > 0;
@@ -458,14 +458,14 @@ export function initCollapse(getQuery) {
   document.addEventListener('click', function (e) {
     var btn = e.target.closest('[data-collapse-toggle]');
     if (!btn) return;
-    // 切换折叠偏好；若当前有搜索词，偏好只记录不生效
+    // Toggle persisted collapse preference; if a search query is active, record preference without hiding filtered rows
     var next = !readCollapsePref();
     setStored(COLLAPSE_KEY, next ? '1' : '0');
     document.querySelectorAll('.ledger').forEach(function (l) { applyCollapse(l, next, !!getQuery()); });
   });
 }
 
-// ---------- 图注 details 随断点同步开合 ----------
+// ---------- Sync legend <details> open state across responsive breakpoints ----------
 
 export function initLegendSync() {
   if (!mobileQuery || !mobileQuery.addEventListener) return;
@@ -475,7 +475,7 @@ export function initLegendSync() {
   });
 }
 
-// ---------- 刻度尺：键盘漫游 + 点击跳转 ----------
+// ---------- Month ruler: keyboard roving focus + click-to-jump ----------
 
 function jumpToRow(tick, clearSearch) {
   var panel = tick.closest('.branch-panel');
@@ -483,9 +483,9 @@ function jumpToRow(tick, clearSearch) {
   if (!ledger) return;
   var row = ledger.querySelector('.row[data-date="' + tick.dataset.jump + '"]');
   if (!row) return;
-  // 目标行若被搜索过滤掉，先清空搜索
+  // Clear active search filter if the target row is currently filtered out
   if (ledger.classList.contains('is-filtered') && clearSearch) clearSearch();
-  // 目标行若被折叠隐藏，临时展开当前账册（不改写用户的折叠偏好）
+  // Temporarily expand the current ledger if the target row is hidden inside a collapsed deprecated section
   if (row.classList.contains('is-deprecated') && ledger.classList.contains('is-dep-collapsed')) {
     applyCollapse(ledger, false, false);
   }
@@ -493,7 +493,7 @@ function jumpToRow(tick, clearSearch) {
   row.classList.remove('is-flash');
   void row.offsetWidth;
   row.classList.add('is-flash');
-  // 定位提示：减少动效时没有闪烁，改用「刚看过」的朱砂左线
+  // Highlight target row with the visited accent border (especially helpful when reduced motion disables flash)
   document.querySelectorAll('.row.is-visited').forEach(function (r) { r.classList.remove('is-visited'); });
   row.classList.add('is-visited');
   var btn = row.querySelector('.row__btn');
@@ -507,7 +507,7 @@ export function initRulerJump(clearSearch) {
     jumpToRow(tick, clearSearch);
   });
 
-  // 轨道聚焦后 ← → 在有发布的月份间移动，回车 / 空格跳转
+  // When the ruler track has focus, Left/Right moves across release ticks and Enter/Space jumps to the row
   document.addEventListener('keydown', function (e) {
     var track = e.target.closest ? e.target.closest('.ruler__track') : null;
     if (!track) return;
@@ -529,7 +529,7 @@ export function initRulerJump(clearSearch) {
   });
 }
 
-// ---------- 报头读数 ----------
+// ---------- Masthead summary readout ----------
 
 export function renderReadout(summary) {
   var el = document.getElementById('readout');

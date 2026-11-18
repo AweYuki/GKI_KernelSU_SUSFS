@@ -1,14 +1,14 @@
 /**
- * 主题切换模块（深色 / 浅色）
- * 优先级：localStorage > 系统 prefers-color-scheme > 深色
- * 仪表盘与教程页共用同一个存储键，切换后两页一致
+ * Theme switcher module (dark / light).
+ * Priority: localStorage > OS prefers-color-scheme > dark.
+ * Shared across the dashboard and guide pages via the same storage key.
  */
 
 import { getStored, setStored } from './utils.js';
 
 var STORAGE_KEY = 'theme';
 
-// 读取初始主题
+// Resolve initial theme preference
 export function resolveInitialTheme() {
   var saved = getStored(STORAGE_KEY);
   if (saved === 'dark' || saved === 'light') return saved;
@@ -16,7 +16,7 @@ export function resolveInitialTheme() {
   return 'dark';
 }
 
-// 应用主题到根元素
+// Apply theme attribute and meta theme-color to the root element
 export function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   var meta = document.querySelector('meta[name="theme-color"]');
@@ -24,7 +24,7 @@ export function applyTheme(theme) {
 }
 
 /**
- * 初始化主题按钮
+ * Initialize theme toggle button.
  * @param {object} opts  { button: HTMLElement, labels: { light, dark }, onChange }
  */
 export function initTheme(opts) {

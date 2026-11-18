@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="651" height="629" viewBox="0 0 651 629" role="img" aria-label="选择 Android 内核构建自定义工作流并填写版本参数">
+<svg xmlns="http://www.w3.org/2000/svg" width="651" height="629" viewBox="0 0 651 629" role="img" aria-label="Select the Custom Android Kernel Build workflow and fill in version parameters">
   <rect width="651" height="629" fill="#ffffff"/>
   <rect x="0" y="0" width="335" height="629" fill="#ffffff"/>
   <rect x="335" y="0" width="316" height="629" fill="#ffffff"/>
@@ -12,16 +12,16 @@
 
   <rect x="8" y="107" width="311" height="33" rx="6" fill="#eaeef2"/>
   <rect x="8" y="112" width="3" height="23" fill="#0969da"/>
-  <text x="24" y="129" font-family="Arial, sans-serif" font-size="15" font-weight="600" fill="#24292f">Android 内核构建-自定义</text>
-  <text x="24" y="162" font-family="Arial, sans-serif" font-size="14" fill="#57606a">Auto Trigger on SukiSU-Nova Update</text>
+  <text x="24" y="129" font-family="Arial, sans-serif" font-size="15" font-weight="600" fill="#24292f">Custom Android Kernel Build</text>
+  <text x="24" y="162" font-family="Arial, sans-serif" font-size="14" fill="#57606a">Auto Trigger on AweYukiSU Update</text>
   <text x="24" y="195" font-family="Arial, sans-serif" font-size="14" fill="#57606a">Copilot coding agent</text>
   <text x="24" y="228" font-family="Arial, sans-serif" font-size="14" fill="#57606a">Emergency Release Cleanup</text>
   <text x="24" y="261" font-family="Arial, sans-serif" font-size="14" fill="#57606a">GetManager</text>
   <text x="24" y="294" font-family="Arial, sans-serif" font-size="14" fill="#57606a">Update Data &amp; Deploy Pages</text>
-  <text x="24" y="327" font-family="Arial, sans-serif" font-size="14" fill="#57606a">内核构建 - Android 12 (5.10)</text>
-  <text x="24" y="360" font-family="Arial, sans-serif" font-size="14" fill="#57606a">内核构建 - Android 13 (5.15)</text>
-  <text x="24" y="393" font-family="Arial, sans-serif" font-size="14" fill="#57606a">内核构建 - Android 14 (6.1)</text>
-  <text x="24" y="426" font-family="Arial, sans-serif" font-size="14" fill="#57606a">内核构建 - Android 15 (6.6)</text>
+  <text x="24" y="327" font-family="Arial, sans-serif" font-size="14" fill="#57606a">Kernel Build - Android 12 (5.10)</text>
+  <text x="24" y="360" font-family="Arial, sans-serif" font-size="14" fill="#57606a">Kernel Build - Android 13 (5.15)</text>
+  <text x="24" y="393" font-family="Arial, sans-serif" font-size="14" fill="#57606a">Kernel Build - Android 14 (6.1)</text>
+  <text x="24" y="426" font-family="Arial, sans-serif" font-size="14" fill="#57606a">Kernel Build - Android 15 (6.6)</text>
   <text x="24" y="459" font-family="Arial, sans-serif" font-size="14" fill="#0969da">Show more workflows...</text>
   <line x1="0" y1="477" x2="327" y2="477" stroke="#d8dee4"/>
   <text x="24" y="506" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#6e7781">Management</text>
@@ -33,45 +33,48 @@
   <rect x="353" y="46" width="100" height="27" rx="6" fill="#f6f8fa" stroke="#d0d7de"/>
   <text x="366" y="64" font-family="Arial, sans-serif" font-size="12" fill="#24292f">Branch: dev ▾</text>
 
-  <text x="352" y="134" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#24292f">Android 版本</text>
-  <text x="445" y="134" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#cf222e">*</text>
-  <rect x="353" y="145" width="271" height="28" rx="6" fill="#f6f8fa" stroke="#d0d7de"/>
-  <text x="366" y="164" font-family="Arial, sans-serif" font-size="12" fill="#57606a">android12</text>
-  <text x="607" y="164" font-family="Arial, sans-serif" font-size="12" fill="#57606a">◆</text>
+  <text x="352" y="118" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#24292f">Kernel version <tspan fill="#cf222e">*</tspan></text>
+  <rect x="353" y="126" width="271" height="26" rx="6" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="366" y="143" font-family="Arial, sans-serif" font-size="12" fill="#57606a">5.10</text>
+  <text x="607" y="143" font-family="Arial, sans-serif" font-size="12" fill="#57606a">◆</text>
 
-  <text x="352" y="197" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#24292f">内核版本</text>
-  <text x="414" y="197" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#cf222e">*</text>
-  <rect x="353" y="208" width="271" height="28" rx="6" fill="#f6f8fa" stroke="#d0d7de"/>
-  <text x="366" y="227" font-family="Arial, sans-serif" font-size="12" fill="#57606a">5.10</text>
-  <text x="607" y="227" font-family="Arial, sans-serif" font-size="12" fill="#57606a">◆</text>
+  <text x="352" y="172" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#24292f">KernelSU variant <tspan fill="#cf222e">*</tspan></text>
+  <rect x="353" y="180" width="271" height="26" rx="6" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="366" y="197" font-family="Arial, sans-serif" font-size="12" fill="#57606a">AweYukiSU</text>
+  <text x="607" y="197" font-family="Arial, sans-serif" font-size="12" fill="#57606a">◆</text>
 
-  <text x="352" y="260" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#24292f">子版本号（如 66，198，X）</text>
-  <text x="515" y="260" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#cf222e">*</text>
-  <rect x="353" y="271" width="271" height="28" rx="6" fill="#f6f8fa" stroke="#d0d7de"/>
-  <text x="366" y="290" font-family="Arial, sans-serif" font-size="12" fill="#57606a">66</text>
+  <text x="352" y="226" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#24292f">KernelSU / SUSFS mode <tspan fill="#cf222e">*</tspan></text>
+  <rect x="353" y="234" width="271" height="26" rx="6" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="366" y="251" font-family="Arial, sans-serif" font-size="12" fill="#57606a">Off</text>
+  <text x="607" y="251" font-family="Arial, sans-serif" font-size="12" fill="#57606a">◆</text>
 
-  <text x="352" y="323" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#24292f">安全补丁级别（如 2022-01，lts）</text>
-  <text x="553" y="323" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#cf222e">*</text>
-  <rect x="353" y="334" width="271" height="28" rx="6" fill="#f6f8fa" stroke="#d0d7de"/>
-  <text x="366" y="353" font-family="Arial, sans-serif" font-size="12" fill="#57606a">2022-01</text>
+  <text x="352" y="280" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#24292f">KPM support (patched is not supported yet) <tspan fill="#cf222e">*</tspan></text>
+  <rect x="353" y="288" width="271" height="26" rx="6" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="366" y="305" font-family="Arial, sans-serif" font-size="12" fill="#57606a">disabled</text>
+  <text x="607" y="305" font-family="Arial, sans-serif" font-size="12" fill="#57606a">◆</text>
 
-  <text x="352" y="386" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#24292f">修订版本（如 r11，仅 5.10 需要）</text>
-  <rect x="353" y="397" width="271" height="28" rx="6" fill="#f6f8fa" stroke="#d0d7de"/>
-  <text x="366" y="416" font-family="Arial, sans-serif" font-size="12" fill="#57606a">r11</text>
+  <text x="352" y="334" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#24292f">Droidspaces container support</text>
+  <text x="352" y="348" font-family="Arial, sans-serif" font-size="11" font-weight="600" fill="#57606a">(5.10~6.6: slot patch, 6.12: on/off)</text>
+  <rect x="353" y="356" width="271" height="26" rx="6" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="366" y="373" font-family="Arial, sans-serif" font-size="12" fill="#57606a">off</text>
+  <text x="607" y="373" font-family="Arial, sans-serif" font-size="12" fill="#57606a">◆</text>
 
-  <text x="352" y="449" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#24292f">Kernelsu 变体</text>
-  <text x="443" y="449" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#cf222e">*</text>
-  <rect x="353" y="460" width="271" height="28" rx="6" fill="#f6f8fa" stroke="#d0d7de"/>
-  <text x="366" y="479" font-family="Arial, sans-serif" font-size="12" fill="#57606a">BakaSU</text>
-  <text x="607" y="479" font-family="Arial, sans-serif" font-size="12" fill="#57606a">◆</text>
+  <text x="352" y="402" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#24292f">Artifact upload mode <tspan fill="#cf222e">*</tspan></text>
+  <rect x="353" y="410" width="271" height="26" rx="6" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="366" y="427" font-family="Arial, sans-serif" font-size="12" fill="#57606a">Only AnyKernel3.zip</text>
+  <text x="607" y="427" font-family="Arial, sans-serif" font-size="12" fill="#57606a">◆</text>
 
-  <text x="352" y="512" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#24292f">自定义版本名（可选）</text>
-  <rect x="353" y="523" width="271" height="28" rx="6" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="352" y="456" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#24292f">Security patch level (e.g., 2022-01, lts) <tspan fill="#cf222e">*</tspan></text>
+  <rect x="353" y="464" width="271" height="26" rx="6" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="366" y="481" font-family="Arial, sans-serif" font-size="12" fill="#57606a">2022-01</text>
 
-  <rect x="353" y="587" width="93" height="28" rx="6" fill="#1a7f37"/>
-  <text x="365" y="606" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#ffffff">Run workflow</text>
+  <text x="352" y="510" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#24292f">Custom version string (optional)</text>
+  <rect x="353" y="518" width="271" height="26" rx="6" fill="#f6f8fa" stroke="#d0d7de"/>
+
+  <rect x="353" y="582" width="93" height="28" rx="6" fill="#1a7f37"/>
+  <text x="365" y="601" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#ffffff">Run workflow</text>
 
   <rect x="642" y="103" width="8" height="245" rx="4" fill="#8c959f"/>
-  <rect x="8.5" y="109.5" width="216" height="28" fill="none" stroke="#ff0000" stroke-width="2"/>
-  <rect x="351.5" y="118.5" width="283" height="246" fill="none" stroke="#ff0000" stroke-width="2"/>
+  <rect x="8.5" y="109.5" width="242" height="28" fill="none" stroke="#ff0000" stroke-width="2"/>
+  <rect x="346.5" y="103.5" width="286" height="394" fill="none" stroke="#ff0000" stroke-width="2"/>
 </svg>

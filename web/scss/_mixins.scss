@@ -1,6 +1,6 @@
-// ===== 共用 Mixin =====
+// ===== Shared SCSS mixins =====
 
-// 响应式断点
+// Responsive breakpoints
 @mixin mobile {
   @media (max-width: 767px) { @content; }
 }
@@ -17,24 +17,24 @@
   @media (max-width: 1199px) { @content; }
 }
 
-// 元数据小标签：英文大写 + 字距，中文靠字号与颜色（不依赖 500 字重）
+// Metadata micro-label: uppercase + tracking in Latin scripts; size + muted ink in CJK (avoids relying on weight 500)
 @mixin meta-label {
   font-family: var(--font-sans);
   font-size: var(--meta-fs);
-  line-height: 1.2;
+  line-height: 1.3;
   letter-spacing: var(--meta-ls);
   text-transform: var(--meta-tt);
   color: var(--text-2);
 }
 
-// 等宽数字
+// Tabular monospace numerals
 @mixin mono {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums slashed-zero;
   letter-spacing: -0.01em;
 }
 
-// 焦点环（只在键盘聚焦时出现）
+// Keyboard-only focus ring
 @mixin focus-ring($inset: false) {
   outline: none;
 
@@ -48,7 +48,7 @@
   }
 }
 
-// 45° 斜纹（弃用区间）
+// 45° diagonal hatching (deprecated zone)
 @mixin hatch($color: var(--hatch)) {
   background-image: repeating-linear-gradient(
     45deg,
@@ -59,7 +59,7 @@
   );
 }
 
-// 文字按钮：无边框、悬停时 2px 朱砂下划线
+// Borderless text button with a 2px vermilion underline on hover / active
 @mixin text-button {
   appearance: none;
   background: none;
@@ -106,7 +106,7 @@
   @include focus-ring;
 }
 
-// 描边按钮：1px 主文本色边框，悬停反白
+// Outlined button: 1px primary-text border, inverted fill on hover
 @mixin outline-button {
   appearance: none;
   background: none;
@@ -128,7 +128,7 @@
   @include focus-ring;
 }
 
-// 小型「复制」文字按钮（朱砂下划线）
+// Compact "Copy" action text button (vermilion underline)
 @mixin copy-button {
   appearance: none;
   background: none;
@@ -158,7 +158,7 @@
   @include focus-ring;
 }
 
-// 仅供屏幕阅读器
+// Screen-reader-only helper
 @mixin visually-hidden {
   position: absolute !important;
   width: 1px;
@@ -171,7 +171,7 @@
   border: 0;
 }
 
-// 6px 实心方块（青 = SUSFS，朱砂 = 最新）
+// 6px solid square swatch (teal = SUSFS, vermilion = latest)
 @mixin square($color) {
   content: '';
   display: inline-block;
@@ -182,7 +182,7 @@
   flex-shrink: 0;
 }
 
-// 双细线（报头 / 弹窗头部收边）
+// Double hairline rule (finishing border under masthead and modal headers)
 @mixin double-rule {
   border-bottom: 1px solid var(--rule);
   position: relative;

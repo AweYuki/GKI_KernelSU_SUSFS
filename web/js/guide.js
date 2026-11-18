@@ -1,5 +1,5 @@
 /**
- * 教程页入口：共用主题 / 语言模块，提供目录高亮与截图灯箱
+ * Guide page entry point: shares theme & i18n modules, provides TOC scroll-spy and screenshot lightbox.
  */
 
 import '../scss/guide.scss';
@@ -8,7 +8,7 @@ import { t, lang, initI18n } from './i18n.js';
 import { initTheme } from './theme.js';
 import { initBackToTop } from './back-to-top.js';
 
-// initI18n 会把标题改成仪表盘标题，教程页需要保留自己的标题
+// initI18n overwrites document.title with the dashboard title; preserve the guide's own default title
 var pageTitle = document.title;
 initI18n();
 document.title = pageTitle;
@@ -18,16 +18,21 @@ initTheme({
 });
 initBackToTop();
 
-// ---- 教程正文双语：中文写在 HTML 里，英文来自 data-en 属性 ----
-if (lang === 'en') {
-  document.querySelectorAll('[data-en]').forEach(function (el) {
-    el.innerHTML = el.getAttribute('data-en');
+// ---- Guide body localization: English is in static HTML; Vietnamese & Chinese come from data-vi / data-zh ----
+if (lang === 'vi' || lang === 'zh') {
+  var textAttr = 'data-' + lang;
+  document.querySelectorAll('[' + textAttr + ']').forEach(function (el) {
+    el.innerHTML = el.getAttribute(textAttr);
   });
-  var titleEn = document.documentElement.getAttribute('data-title-en');
-  if (titleEn) document.title = titleEn;
+  var altAttr = 'data-alt-' + lang;
+  document.querySelectorAll('[' + altAttr + ']').forEach(function (el) {
+    el.setAttribute('alt', el.getAttribute(altAttr));
+  });
+  var localizedTitle = document.documentElement.getAttribute('data-title-' + lang);
+  if (localizedTitle) document.title = localizedTitle;
 }
 
-// ---- 灯箱 ----
+// ---- Lightbox ----
 var lightbox = document.getElementById('lightbox');
 var lightboxImg = document.getElementById('lightboxImg');
 
@@ -49,7 +54,7 @@ if (lightbox) {
   });
 }
 
-// ---- 目录高亮：滚动时标出当前步骤 ----
+// ---- Table of contents scroll-spy: highlight active step while scrolling ----
 var tocLinks = Array.prototype.slice.call(document.querySelectorAll('.toc a[href^="#"]'));
 var steps = tocLinks.map(function (a) { return document.querySelector(a.getAttribute('href')); }).filter(Boolean);
 

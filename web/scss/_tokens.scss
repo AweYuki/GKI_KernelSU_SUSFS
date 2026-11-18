@@ -1,9 +1,9 @@
-// ===== 设计令牌：颜色（深色 / 浅色）、字体、间距、圆角、动效 =====
-// 视觉语言「内核年鉴」：只有两个彩色色相（朱砂 = 当前/可操作，青 = SUSFS 兼容），
-// 弃用用「少墨的灰 + 斜纹」，层级靠线而不是色块。
+// ===== Design tokens: colors (dark / light), typography, spacing, radii, motion =====
+// Visual language ("Kernel Almanac"): only two chromatic hues (vermilion = current/actionable, teal = SUSFS compatible);
+// deprecated rows use low-ink grey + diagonal hatching; hierarchy relies on hairlines/rules rather than tinted blocks.
 
 :root {
-  // 颜色 —— 深色主题（默认）
+  // Colors — dark theme (default)
   --bg: #111214;
   --surface: #18191c;
   --overlay: #1f2024;
@@ -28,13 +28,13 @@
   --shadow-dialog: none;
   --focus: #ff6b3d;
 
-  // 字体
+  // Font stacks (IBM Plex Sans covers Latin + Vietnamese; CJK fallbacks cover Chinese)
   --font-sans: "IBM Plex Sans", -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
     "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", "Cascadia Mono", "JetBrains Mono",
     Menlo, Consolas, "Liberation Mono", "Noto Sans Mono CJK SC", monospace;
 
-  // 字号阶梯
+  // Type scale
   --fs-11: 0.6875rem;
   --fs-12: 0.75rem;
   --fs-13: 0.8125rem;
@@ -47,12 +47,12 @@
   --fs-40: 2.5rem;
   --fs-display: clamp(3rem, 6vw, 4.5rem);
 
-  // 元数据小标签：英文大写 + 字距；中文无大小写，改用 12px 与较小字距
+  // Metadata micro-labels: uppercase + wider tracking for English; adjusted below for Vietnamese & Chinese
   --meta-fs: var(--fs-11);
   --meta-ls: 0.08em;
   --meta-tt: uppercase;
 
-  // 间距（4px 基线）
+  // Spacing (4px baseline grid)
   --sp-1: 4px;
   --sp-2: 8px;
   --sp-3: 12px;
@@ -62,27 +62,27 @@
   --sp-12: 48px;
   --sp-16: 64px;
 
-  // 版面
+  // Layout metrics
   --content-max: 1120px;
   --page-pad: 32px;
   --nav-h: 64px;
   --toolbar-h: 32px;
-  // 账册日期列宽（表头与行共用，避免 ch 基准不同导致错位）
+  // Shared date column width across ledger header and rows to prevent `ch` unit drift
   --col-date: 108px;
 
-  // 圆角（全站无胶囊）
+  // Radii (no pill shapes sitewide)
   --r-0: 0;
   --r-1: 2px;
   --r-2: 4px;
   --r-sheet: 8px;
 
-  // 动效
+  // Motion
   --dur-1: 120ms;
   --dur-2: 160ms;
   --dur-3: 240ms;
   --ease: cubic-bezier(0.2, 0, 0, 1);
 
-  // 层级
+  // Z-index layers
   --z-nav: 100;
   --z-top: 900;
   --z-dialog: 1000;
@@ -119,13 +119,17 @@
   color-scheme: light;
 }
 
+:lang(vi) {
+  --meta-ls: 0.05em;
+}
+
 :lang(zh-CN) {
   --meta-fs: var(--fs-12);
   --meta-ls: 0.05em;
   --meta-tt: none;
 }
 
-// 手机版面
+// Mobile layout metrics
 @media (max-width: 767px) {
   :root {
     --page-pad: 16px;

@@ -1,5 +1,5 @@
 /**
- * 入口模块：初始化所有子模块，加载并渲染内核数据
+ * Dashboard entry point: initialize all submodules, fetch and render kernel release data.
  */
 
 import '../scss/main.scss';
@@ -33,14 +33,14 @@ initCollapse(getQuery);
 initRulerJump(clearSearch);
 initLegendSync();
 
-// 复制按钮全局事件委托（参数单、时间转换器共用）
+// Global event delegation for copy buttons (shared by parameter sheet and time converter)
 document.addEventListener('click', function (e) {
   var btn = e.target.closest('.copy-btn');
   if (!btn) return;
   var text = btn.dataset.copy;
   if (!text) return;
   copyText(text).then(function () {
-    // 连续点击时清掉上一次的还原计时器，避免按钮停在「已复制」
+    // Clear any previous reset timer on rapid clicks so the button doesn't get stuck on "Copied"
     if (btn._copyTimer) clearTimeout(btn._copyTimer);
     btn.textContent = t.copied;
     btn.classList.add('copied');
@@ -53,14 +53,14 @@ document.addEventListener('click', function (e) {
   }).catch(function () {});
 });
 
-// 从 URL hash 读取初始分支（#android15-6.6）
+// Resolve initial branch key from URL hash (e.g. #android15-6.6)
 function keyFromHash() {
   var h = (location.hash || '').replace(/^#/, '');
   return getModel(h) ? h : null;
 }
 
 async function loadData() {
-  // 版本数据与 SUSFS 探测数据并行拉取；探测文件可缺失（缺失时退回阈值）
+  // Fetch version data and SUSFS probe data in parallel; probe files are optional (falls back to threshold if absent)
   var settled = await Promise.allSettled(
     DATA_FILES.map(function (f) {
       return fetchJsonFresh('data/' + f.android + '/' + f.kernel + '.json');
@@ -89,13 +89,13 @@ async function loadData() {
   renderTabs(models, function () { filterActive(); });
   renderPanels(models);
 
-  // 应用弃用折叠偏好
+  // Apply persisted deprecated-section collapse preference
   models.forEach(function (m) {
     var ledger = document.getElementById('ledger-' + m.key);
     if (ledger) applyCollapse(ledger, readCollapsePref(), false);
   });
 
-  // 分支优先级：URL hash > 上次访问的分支 > 最新的分支（最后一个）
+  // Branch selection priority: URL hash > last visited branch > newest branch (last entry)
   var remembered = getStored('last_branch');
   var initial = keyFromHash() || (getModel(remembered) ? remembered : null) || models[models.length - 1].key;
   activateBranch(initial, false);

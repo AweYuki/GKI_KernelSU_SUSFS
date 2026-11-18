@@ -1,4 +1,4 @@
-// ===== Reset 与全局基础 =====
+// ===== Reset and global base styles =====
 
 @use 'mixins' as *;
 
@@ -16,7 +16,7 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   scroll-behavior: smooth;
-  // 吸顶导航高度，供锚点滚动避让
+  // Offset anchor jumps below the sticky branch navigation bar
   scroll-padding-top: calc(var(--nav-h) + 16px);
 }
 
@@ -32,6 +32,7 @@ body {
   @include mobile { font-size: var(--fs-14); }
 }
 
+:lang(vi) body { line-height: 1.6; }
 :lang(zh-CN) body { line-height: 1.7; }
 
 a {
@@ -59,7 +60,7 @@ pre {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 0; }
 
-// 页面栏宽
+// Page content container
 .container {
   max-width: var(--content-max);
   margin: 0 auto;
@@ -71,12 +72,12 @@ pre {
   @include visually-hidden;
 }
 
-// 作者样式里的 display 会压过 UA 的 [hidden]，这里统一兜底
+// Author `display` declarations can override UA `[hidden]`; enforce hiding globally
 [hidden] {
   display: none !important;
 }
 
-// 强制颜色模式：承载语义的小方块、指示线与命令块保留自身颜色
+// Forced-colors mode: preserve semantic swatches, indicators, and terminal command blocks
 @media (forced-colors: active) {
   .tab-indicator,
   .tab__ruler span,
@@ -94,7 +95,7 @@ pre {
   }
 }
 
-// 打印：强制浅色令牌，隐藏交互组件
+// Print stylesheet: force light palette tokens and hide interactive controls
 @media print {
   :root {
     --bg: #ffffff;
@@ -128,7 +129,7 @@ pre {
   .year__note { position: static; }
 }
 
-// 减少动效：所有过渡与动画归零
+// Reduced motion: collapse all transition and animation durations
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
 

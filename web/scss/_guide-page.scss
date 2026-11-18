@@ -1,8 +1,8 @@
-// ===== 教程页专用样式（与仪表盘共用令牌、工具条、报头、页脚） =====
+// ===== Guide page specific styles (shares tokens, toolbar, masthead, and footer with the dashboard) =====
 
 @use 'mixins' as *;
 
-// 教程页没有吸顶导航，锚点不需要避让
+// The guide page has no sticky branch bar, so anchor jumps only need modest top clearance
 html { scroll-padding-top: var(--sp-6); }
 
 .guide {
@@ -19,7 +19,7 @@ html { scroll-padding-top: var(--sp-6); }
   }
 }
 
-// 目录：桌面左栏 sticky
+// Table of contents: sticky left column on desktop
 .toc {
   position: sticky;
   top: calc(var(--sp-6));
@@ -70,7 +70,7 @@ html { scroll-padding-top: var(--sp-6); }
 
 .guide__main { min-width: 0; }
 
-// 步骤
+// Guide step sections
 .step {
   border-top: 1px solid var(--rule);
   padding: var(--sp-4) 0 var(--sp-8);
@@ -180,7 +180,7 @@ html { scroll-padding-top: var(--sp-6); }
   }
 }
 
-// 提示块
+// Callout notice boxes
 .notice {
   display: flex;
   gap: var(--sp-3);
@@ -205,7 +205,7 @@ html { scroll-padding-top: var(--sp-6); }
 .notice--info { border-left-color: var(--susfs-fill); .notice__label { color: var(--susfs); } }
 .notice--warn { border-left-color: var(--accent-fill); .notice__label { color: var(--accent); } }
 
-// 截图
+// Screenshot cards
 .shots {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -250,7 +250,7 @@ html { scroll-padding-top: var(--sp-6); }
   .shot__idx { color: var(--accent); flex-shrink: 0; }
 }
 
-// 灯箱
+// Screenshot lightbox
 .lightbox {
   border: 0;
   padding: 0;

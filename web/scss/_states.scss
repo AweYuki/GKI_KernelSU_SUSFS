@@ -1,4 +1,4 @@
-// ===== 加载 / 错误 / 面板显隐 =====
+// ===== Loading / error / branch panel visibility states =====
 
 @use 'mixins' as *;
 
@@ -47,7 +47,7 @@
   code { font-size: var(--fs-13); }
 }
 
-// 分支面板：仅当前面板显示，切换时淡入并上移 8px
+// Branch panels: show only the active panel, fading in with an 8px upward slide on switch
 .branch-panel {
   display: none;
 

@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#111214">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23f7f6f2'/%3E%3Crect x='9' y='9' width='14' height='14' fill='%23d9491f'/%3E%3C/svg%3E">
   <script>
-    // 首屏绘制前同步写入主题与语言，避免闪白与跳版
+    // Synchronously apply theme and language before first paint to prevent FOUC and layout shift
     (function () {
       try {
         var t = localStorage.getItem('theme');
@@ -17,16 +17,12 @@
         }
         document.documentElement.setAttribute('data-theme', t);
         var l = localStorage.getItem('lang');
-        if (l !== 'zh' && l !== 'en') l = /^zh\b/i.test(navigator.language) ? 'zh' : 'en';
-        document.documentElement.lang = l === 'zh' ? 'zh-CN' : 'en';
-      } catch (e) { /* 隐私模式下 localStorage 不可用时保持默认 */ }
+        if (l !== 'en' && l !== 'vi' && l !== 'zh') l = 'en';
+        document.documentElement.lang = l === 'zh' ? 'zh-CN' : l;
+      } catch (e) { /* Keep defaults when localStorage is unavailable (e.g. private browsing) */ }
     })();
   </script>
-  <script
-    data-goatcounter="https://zzh20188.goatcounter.com/count"
-    async
-    src="//gc.zgo.at/count.js"></script>
-  <!-- 字体非阻塞加载：大陆用户加载失败时直接使用系统字体，不阻塞渲染 -->
+  <!-- Load Google Fonts non-blockingly: fall back to system fonts immediately if unavailable -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;600&display=fallback" media="print" onload="this.media='all'">
@@ -37,7 +33,7 @@
 
   <header class="toolbar">
     <div class="container toolbar__inner">
-      <a class="toolbar__repo" href="https://github.com/zzh20188/GKI_KernelSU_SUSFS" target="_blank" rel="noopener" title="zzh20188/GKI_KernelSU_SUSFS"><span class="toolbar__repo-full">zzh20188/GKI_KernelSU_SUSFS</span><span class="toolbar__repo-short" data-i18n="siteShort">GKI Almanac</span></a>
+      <a class="toolbar__repo" href="https://github.com/AweYuki/GKI_KernelSU_SUSFS" target="_blank" rel="noopener" title="AweYuki/GKI_KernelSU_SUSFS"><span class="toolbar__repo-full">AweYuki/GKI_KernelSU_SUSFS</span><span class="toolbar__repo-short" data-i18n="siteShort">GKI Almanac</span></a>
       <nav class="toolbar__actions" aria-label="Site">
         <button class="tb-link tb-link--announce" id="announceOpen" type="button" hidden data-i18n-attr="aria-label:announce,title:announce">
           <span class="tb-link__dot" aria-hidden="true"></span>
@@ -49,14 +45,16 @@
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 3h5a2 2 0 0 1 2 2v9a1.5 1.5 0 0 0-1.5-1.5H2z"/><path d="M14 3H9a2 2 0 0 0-2 2v9a1.5 1.5 0 0 1 1.5-1.5H14z"/></svg>
           <span class="tb-link__text" data-i18n="guide">Guide</span>
         </a>
-        <a class="tb-link" href="https://github.com/zzh20188/GKI_KernelSU_SUSFS" target="_blank" rel="noopener" title="GitHub">
+        <a class="tb-link" href="https://github.com/AweYuki/GKI_KernelSU_SUSFS" target="_blank" rel="noopener" title="GitHub">
           <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
           <span class="tb-link__text">GitHub</span>
         </a>
         <div class="lang-switch" role="group" aria-label="Language">
-          <button type="button" id="langZh" data-lang="zh">中</button>
-          <span class="lang-switch__sep" aria-hidden="true">|</span>
           <button type="button" id="langEn" data-lang="en">EN</button>
+          <span class="lang-switch__sep" aria-hidden="true">|</span>
+          <button type="button" id="langVi" data-lang="vi">VI</button>
+          <span class="lang-switch__sep" aria-hidden="true">|</span>
+          <button type="button" id="langZh" data-lang="zh">中</button>
         </div>
         <button class="theme-toggle" id="themeToggle" type="button">
           <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 0 0 13z" fill="currentColor"/></svg>
@@ -68,11 +66,11 @@
   <section class="masthead">
     <div class="container masthead__inner">
       <div>
-        <div class="masthead__eyebrow" data-i18n="tagline">Android Generic Kernel Image</div>
+        <div class="masthead__eyebrow" data-i18n="tagline">Android Generic Kernel Image · Almanac</div>
         <h1 class="masthead__title" data-i18n="title">GKI Kernel Versions</h1>
       </div>
       <div class="masthead__aside">
-        <p class="masthead__lede" data-i18n="subtitle">Security patch month to kernel sublevel, for every Android GKI branch</p>
+        <p class="masthead__lede" data-i18n="subtitle">Security patch month to kernel sublevel, for every Android GKI branch. Click a release for build parameters.</p>
         <div class="masthead__readout" id="readout" aria-live="polite"></div>
       </div>
     </div>
@@ -112,7 +110,7 @@
     <span class="footer__mark">GKI_KernelSU_SUSFS</span>
   </footer>
 
-  <!-- 构建参数「参数单」 -->
+  <!-- Build parameters dialog -->
   <dialog class="dialog" id="paramsDialog" aria-labelledby="paramsEyebrow paramsTitle">
     <div class="dialog__grip" aria-hidden="true"></div>
     <div class="dialog__head">
@@ -129,7 +127,7 @@
     <div class="dialog__foot" id="paramsFoot"></div>
   </dialog>
 
-  <!-- 公告「号外」 -->
+  <!-- Announcement dialog -->
   <dialog class="dialog dialog--announce" id="announceDialog" aria-labelledby="announceTitle" tabindex="-1">
     <div class="dialog__grip" aria-hidden="true"></div>
     <div class="dialog__head">
@@ -146,7 +144,7 @@
         <span class="check__box" aria-hidden="true"></span>
         <span data-i18n="announceDismiss">Don’t show today</span>
       </label>
-      <button class="btn-outline" id="announceOk" type="button" data-i18n="announceClose">Close</button>
+      <button class="btn-outline" id="announceOk" type="button" data-i18n="announceClose">Got it</button>
     </div>
   </dialog>
 

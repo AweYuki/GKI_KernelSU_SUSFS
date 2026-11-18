@@ -1,5 +1,5 @@
 /**
- * Toast 提示模块
+ * Toast notification module.
  */
 
 var toastEl = null;
@@ -8,7 +8,7 @@ var toastTimer = null;
 export function showToast(msg) {
   if (!toastEl) toastEl = document.getElementById('toast');
   if (!toastEl) return;
-  // 原生 dialog 位于顶层，body 里的 toast 会被遮罩压住；挂到打开的 dialog 内即可置顶
+  // Native <dialog> renders in the top layer, masking elements in <body>; attach toast inside any open dialog so it stays on top
   var host = document.querySelector('dialog[open]') || document.body;
   if (toastEl.parentNode !== host) host.appendChild(toastEl);
   clearTimeout(toastTimer);

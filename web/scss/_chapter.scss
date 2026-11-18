@@ -1,4 +1,4 @@
-// ===== 章首页：大数字 + 规格表 + 图注/工具 + 月份刻度尺 =====
+// ===== Chapter header: display numeral + spec table + legend/tools + month ruler =====
 
 @use 'mixins' as *;
 
@@ -25,7 +25,7 @@
   }
 }
 
-// ---- 章名：大数字 + LTS ----
+// ---- Chapter title: display numeral + LTS ----
 
 .chapter__name { min-width: 0; }
 
@@ -36,7 +36,7 @@
   gap: var(--sp-3);
 }
 
-// 分支标识符不做大写转换，保持与数据一致
+// Keep branch identifier lowercase to match AOSP branch naming
 .chapter__id {
   @include mono;
   text-transform: none;
@@ -94,7 +94,7 @@
   }
 }
 
-// ---- 规格表 ----
+// ---- Spec table ----
 
 .spec {
   @include mono;
@@ -132,7 +132,7 @@
   &.is-number { font-weight: 500; }
 }
 
-// 章首页的规格表在手机上改为 2×2：标签在上、值在下
+// On mobile, lay out the chapter spec table as a 2×2 grid (label above value)
 .chapter .spec {
   @include mobile {
     display: grid;
@@ -156,7 +156,7 @@
   }
 }
 
-// ---- 图注 + 工具 ----
+// ---- Legend + tools ----
 
 .chapter__aside {
   display: flex;
@@ -164,7 +164,7 @@
   gap: var(--sp-4);
 }
 
-// 图注：桌面常显，手机收进 details（summary 仅手机可见）
+// Legend: always open on desktop; collapsible <details> on mobile (summary visible on mobile only)
 .legend-wrap {
   .legend-wrap__summary {
     display: none;
@@ -254,7 +254,7 @@
 }
 .legend__item--dep { color: var(--text-deprecated); }
 
-// 时间转换器：原生 details，一行「时间转换器（→ UTC）」带上下细线
+// Time converter: native <details> row framed by top and bottom hairlines
 .tools {
   border-top: 1px solid var(--hairline);
   border-bottom: 1px solid var(--hairline);
@@ -334,7 +334,7 @@
   &:focus { border-color: var(--accent); }
   &::-webkit-calendar-picker-indicator { opacity: 0.6; cursor: pointer; }
 
-  // 手机：16px 避免 iOS 聚焦缩放，44px 触控高度
+  // Mobile: 16px prevents iOS auto-zoom; 44px touch target height
   @include mobile { font-size: 16px; min-height: 44px; }
 }
 
@@ -361,7 +361,7 @@
 
 .tc__copy { @include copy-button; }
 
-// ---- 月份刻度尺 ----
+// ---- Month ruler ----
 
 .ruler {
   margin-top: var(--sp-6);
@@ -402,7 +402,7 @@
   padding: 0;
   cursor: default;
 
-  // 刻度本体
+  // Tick mark stem
   &::before {
     content: '';
     position: absolute;
@@ -425,7 +425,7 @@
   &.dep::before { background: var(--text-deprecated); }
   &.dep.on::before { background: var(--text-deprecated); }
 
-  // 弃用截止：右缘一条结构线
+  // Deprecation cutoff: structural vertical rule along the right edge
   &.cutoff::after {
     content: '';
     position: absolute;
@@ -436,7 +436,7 @@
     background: var(--rule);
   }
 
-  // 最新月：6px 朱砂方块（优先级高于 SUSFS 青色与弃用灰）
+  // Latest month: 6px vermilion square (takes precedence over SUSFS teal and deprecated grey)
   &.latest::before,
   &.on.susfs.latest::before,
   &.dep.on.latest::before {
@@ -446,7 +446,7 @@
     bottom: 5px;
   }
 
-  // LTS 所在月：刻度顶端一个 5px 空心方块
+  // LTS month: 5px hollow square above the tick stem
   &.lts .tick__lts {
     position: absolute;
     left: 50%;
@@ -457,7 +457,7 @@
     transform: translateX(-50%);
   }
 
-  // SUSFS 阈值：刻度尺上方一个青色小三角
+  // SUSFS threshold: small teal downward triangle above the ruler
   &.threshold .tick__tri {
     position: absolute;
     left: 50%;
@@ -478,7 +478,7 @@
     &:focus-visible::before { background: var(--accent-fill); }
   }
 
-  // 悬停提示（桌面）
+  // Hover tooltip (desktop)
   .tick__tip {
     @include mono;
     position: absolute;

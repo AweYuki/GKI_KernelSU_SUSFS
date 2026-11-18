@@ -1,17 +1,17 @@
 /**
- * 通用工具函数
+ * Shared utility helpers.
  */
 
 import { RUNTIME_CACHE_KEY } from './config.js';
 
-// 将文本转换为安全的 HTML 内容
+// Escape arbitrary text into safe HTML entities
 export function esc(str) {
   var el = document.createElement('span');
   el.textContent = str == null ? '' : String(str);
   return el.innerHTML;
 }
 
-// 复制文本到剪贴板（兼容旧浏览器）
+// Copy text to clipboard (with fallback for older browsers)
 export function copyText(text) {
   if (navigator.clipboard && navigator.clipboard.writeText) {
     return navigator.clipboard.writeText(text);
@@ -23,38 +23,38 @@ export function copyText(text) {
   ta.style.opacity = '0';
   document.body.appendChild(ta);
   ta.select();
-  try { document.execCommand('copy'); } catch (e) { /* 旧浏览器不支持时静默 */ }
+  try { document.execCommand('copy'); } catch (e) { /* Silently ignore if unsupported */ }
   document.body.removeChild(ta);
   return Promise.resolve();
 }
 
-// 给 URL 追加运行时缓存键
+// Append runtime cache-busting query parameter to a URL
 export function withCacheKey(url) {
   return url + (url.indexOf('?') === -1 ? '?' : '&') + 'v=' + encodeURIComponent(RUNTIME_CACHE_KEY);
 }
 
-// 绕过缓存获取 JSON
+// Fetch JSON bypassing browser cache
 export async function fetchJsonFresh(url) {
   var r = await fetch(withCacheKey(url), { cache: 'no-store' });
   if (!r.ok) throw new Error('HTTP ' + r.status);
   return r.json();
 }
 
-// localStorage 在隐私模式或禁用 Cookie 时会抛异常，统一在这里兜底
+// Safe localStorage wrappers (localStorage throws in private browsing or when cookies/storage are disabled)
 export function getStored(key) {
   try { return localStorage.getItem(key); } catch (e) { return null; }
 }
 
 export function setStored(key, value) {
-  try { localStorage.setItem(key, value); } catch (e) { /* 存储不可用时静默 */ }
+  try { localStorage.setItem(key, value); } catch (e) { /* Silently ignore when storage is unavailable */ }
 }
 
-// 是否偏好减少动效
+// Check whether the user prefers reduced motion
 export function prefersReducedMotion() {
   return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 }
 
-// 简单模板替换：fmt('{a} / {b}', { a: 1, b: 2 })
+// Simple placeholder interpolation: fmt('{a} / {b}', { a: 1, b: 2 })
 export function fmt(template, vars) {
   return String(template).replace(/\{(\w+)\}/g, function (_, key) {
     return vars && vars[key] != null ? vars[key] : '';

@@ -1,4 +1,4 @@
-// ===== 分支导航（吸顶「版面索引」） =====
+// ===== Branch navigation (sticky index bar) =====
 
 @use 'mixins' as *;
 
@@ -17,7 +17,7 @@
   align-items: stretch;
   min-height: var(--nav-h);
 
-  // 平板：搜索栏收窄，页签按内容宽排布，保证 5 个页签在 768 宽下都可见
+  // Tablet: narrow search column and size tabs to content so all 5 tabs remain visible at 768px
   @include below-desktop {
     grid-template-columns: minmax(0, 1fr) minmax(180px, 240px);
     gap: var(--sp-4);
@@ -75,7 +75,7 @@
   }
 
   @include mobile {
-    // 5 个页签正好铺满内容宽，文案全是数字，中英同宽
+    // 5 equal-width numeric tabs span the full row regardless of active language
     flex: 1 1 0;
     min-width: 0;
     margin-right: 0;
@@ -114,8 +114,8 @@
   @include mobile { font-size: var(--fs-17); }
 }
 
-// 页签底部 2px 微刻度尺：该分支整条时间线的横向缩略
-// 格子不设最小宽度，月份再多也不会撑开页签或溢出到邻居
+// 2px micro-ruler under each tab: miniature timeline across all months of the branch.
+// Cells have no min-width so long-lived branches never stretch tabs or overflow into neighbors.
 .tab__ruler {
   display: flex;
   height: 2px;
@@ -134,7 +134,7 @@
     &.on { background: var(--text-3); }
     &.dep.on { background: var(--text-3); opacity: 0.55; }
     &.susfs.on { background: var(--susfs-fill); opacity: 1; }
-    // 最新月：朱砂，优先级高于 SUSFS 青色
+    // Latest month: vermilion takes precedence over SUSFS teal
     &.latest,
     &.susfs.on.latest,
     &.dep.on.latest { background: var(--accent-fill); opacity: 1; flex-basis: 3px; flex-grow: 0; }
@@ -143,7 +143,7 @@
   @include mobile { max-width: none; }
 }
 
-// 当前页签底部的 2px 朱砂线，切换时平移
+// Sliding 2px vermilion underline tracking the active tab
 .tab-indicator {
   position: absolute;
   bottom: 0;
@@ -155,7 +155,7 @@
   pointer-events: none;
 }
 
-// ---- 搜索 ----
+// ---- Search ----
 
 .search {
   display: flex;
@@ -164,7 +164,7 @@
   min-width: 0;
   padding: var(--sp-2) 0;
 
-  // 手机：搜索的子元素直接成为导航网格的格子
+  // Mobile: promote search children directly into the nav grid
   @include mobile {
     display: contents;
   }
@@ -191,7 +191,7 @@
     flex-shrink: 0;
   }
 
-  // 手机：默认收起，展开后占据导航第二行
+  // Mobile: collapsed by default; spans full second grid row when expanded
   @include mobile {
     display: none;
     grid-column: 1 / -1;
@@ -222,7 +222,7 @@
   &::placeholder { color: var(--text-3); }
   &::-webkit-search-cancel-button { display: none; }
 
-  // 手机：16px 避免 iOS Safari 聚焦时自动放大页面
+  // Mobile: 16px prevents iOS Safari auto-zoom on focus
   @include mobile { font-size: 16px; }
 }
 
@@ -263,7 +263,7 @@
   }
 }
 
-// 手机：放大镜按钮占据导航右端的 40px 格
+// Mobile: magnifying-glass button occupying the 40px right-hand cell of the nav bar
 .search__toggle {
   display: none;
   @include text-button;

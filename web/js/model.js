@@ -1,24 +1,24 @@
 /**
- * 视图模型模块：把原始 JSON 数据整理成渲染所需的结构
- * （版本块、子版本增量、弃用区间、SUSFS 兼容、月份刻度尺、最新条目）
+ * View-model module: transform raw JSON data into render-ready structures
+ * (version runs, sublevel deltas, deprecated spans, SUSFS compatibility, month ruler, latest entry).
  *
- * SUSFS 兼容有两个来源：
- *   1. data/susfs_probe/<android>-<kernel>.json：工具分支用原始 susfs4ksu 补丁全量编译得到的逐条结论
- *      （clean = 0 rej 且编译成功；built_with_rej = 有 rej 但编译成功；failed = 编译失败）
- *   2. 没有探测数据时退回 config.js 里的 SUSFS_COMPAT_MIN 阈值
- * 只有 clean 才算「可直接应用」
+ * SUSFS compatibility comes from two sources:
+ *   1. data/susfs_probe/<android>-<kernel>.json: per-release verdicts from full raw susfs4ksu patch builds
+ *      (clean = 0 .rej and built; built_with_rej = built with .rej conflicts; failed = build failed)
+ *   2. Fallback to SUSFS_COMPAT_MIN thresholds in config.js when probe data is absent
+ * Only `clean` counts as directly compatible.
  */
 
 import { SUSFS_COMPAT_MIN } from './config.js';
 
-// 取内核版本串中的子版本号，如 "6.6.50" -> 50
+// Extract numeric sublevel from a kernel version string, e.g. "6.6.50" -> 50
 export function sublevelOf(kernel) {
   var parts = String(kernel || '').split('.');
   var n = parseInt(parts[2], 10);
   return isNaN(n) ? null : n;
 }
 
-// 按阈值判断某条内核版本是否达到 SUSFS 直接兼容（无探测数据时的兜底）
+// Check whether a kernel version meets the fallback SUSFS compatibility threshold (used when probe data is absent)
 export function isSusfsCompat(kernel, majorMinor) {
   var min = SUSFS_COMPAT_MIN[majorMinor];
   if (min == null) return false;
@@ -26,7 +26,7 @@ export function isSusfsCompat(kernel, majorMinor) {
   return sub != null && sub >= min;
 }
 
-// 上游 ref 的类型：head（活跃分支）/ deprecated（已迁移）/ tag（分支已删除，仅剩发布 tag）/ unknown
+// Classify upstream ref type: head (active branch) / deprecated (moved) / tag (branch deleted, tag remains) / unknown
 export function refKindOf(ref) {
   if (!ref) return 'unknown';
   if (ref.indexOf('refs/heads/deprecated/') === 0) return 'deprecated';
@@ -35,7 +35,7 @@ export function refKindOf(ref) {
   return 'unknown';
 }
 
-// 月份字符串加减：addMonths('2024-10', 1) -> '2024-11'
+// Offset a YYYY-MM month string: addMonths('2024-10', 1) -> '2024-11'
 export function addMonths(ym, n) {
   var y = parseInt(ym.slice(0, 4), 10);
   var m = parseInt(ym.slice(5, 7), 10) - 1 + n;
@@ -44,14 +44,14 @@ export function addMonths(ym, n) {
   return y + '-' + String(m + 1).padStart(2, '0');
 }
 
-// 两个月份之间相差的月数（含符号）
+// Signed month difference between two YYYY-MM strings
 export function monthDiff(a, b) {
   var ya = parseInt(a.slice(0, 4), 10), ma = parseInt(a.slice(5, 7), 10);
   var yb = parseInt(b.slice(0, 4), 10), mb = parseInt(b.slice(5, 7), 10);
   return (yb - ya) * 12 + (mb - ma);
 }
 
-// 整理探测文件：只保留结构正确的部分，缺失或损坏时返回 null
+// Sanitize probe JSON: retain only well-formed entries, returning null if missing or invalid
 function normalizeProbe(probe) {
   if (!probe || typeof probe !== 'object' || !probe.results || typeof probe.results !== 'object') return null;
   var results = {};
@@ -83,10 +83,10 @@ function normalizeProbe(probe) {
 }
 
 /**
- * 构建单个分支的视图模型
- * @param {object} data   原始 JSON（entries / lts / deprecated_cutoff）
- * @param {object} meta   DATA_FILES 中的分支元信息（android / kernel / label）
- * @param {object} probe  可选，data/susfs_probe/<android>-<kernel>.json 的内容
+ * Build the view model for a single kernel branch.
+ * @param {object} data   Raw JSON ({ entries, lts, deprecated_cutoff })
+ * @param {object} meta   Branch metadata from DATA_FILES ({ android, kernel, label })
+ * @param {object} probe  Optional contents of data/susfs_probe/<android>-<kernel>.json
  */
 export function buildBranchModel(data, meta, probe) {
   var entries = Array.isArray(data.entries) ? data.entries.slice() : [];
@@ -96,8 +96,9 @@ export function buildBranchModel(data, meta, probe) {
   var key = meta.android + '-' + meta.kernel;
   var probeInfo = normalizeProbe(probe);
 
-  // 单条记录的 SUSFS 结论：有探测文件时只认探测结果（缺失的月份视为未探测，不再按阈值猜测），
-  // 没有探测文件时才按阈值兜底；LTS 分支会前进，探测到的版本与当前 lts 不一致时也视为未探测
+  // Per-entry SUSFS verdict: when probe data exists, trust only probed results (missing months are marked unknown
+  // rather than guessed from threshold); fall back to threshold only when probe file is absent.
+  // Since LTS advances over time, treat LTS as unprobed if the probed kernel version differs from current `lts`.
   function susfsOf(date, kernel) {
     if (probeInfo) {
       var r = probeInfo.results[date];
@@ -109,7 +110,7 @@ export function buildBranchModel(data, meta, probe) {
     return { susfs: isSusfsCompat(kernel, meta.kernel), rej: false, failed: false, probed: false, unknown: false, rejCount: 0 };
   }
 
-  // ---- 逐行基础字段（时间正序） ----
+  // ---- Base row fields (chronological order) ----
   var rows = [];
   var prevSub = null;
   var deprecatedCount = 0;
@@ -120,7 +121,7 @@ export function buildBranchModel(data, meta, probe) {
     var delta = (prevSub == null || sub == null) ? null : sub - prevSub;
     if (delta != null && delta < 0) monotonic = false;
     var deprecated = !!cutoff && entry.date <= cutoff;
-    // 上游实际位置（由 update_data.py 写入）：refs/heads/... / refs/heads/deprecated/... / refs/tags/..._rN
+    // Actual upstream ref written by update_data.py: refs/heads/... / refs/heads/deprecated/... / refs/tags/..._rN
     var ref = typeof entry.ref === 'string' ? entry.ref : '';
     var s = susfsOf(entry.date, entry.kernel);
     if (deprecated) deprecatedCount++;
@@ -144,7 +145,7 @@ export function buildBranchModel(data, meta, probe) {
       susfsRejCount: s.rejCount,
       latest: i === entries.length - 1,
       isLts: false,
-      // 版本块字段，下面填充
+      // Version-run fields populated below
       runHead: true,
       runCont: false,
       runLen: 1,
@@ -154,7 +155,7 @@ export function buildBranchModel(data, meta, probe) {
     if (sub != null) prevSub = sub;
   });
 
-  // ---- SUSFS 兼容区：只有「从某一行起全部 clean」时才画兼容线，否则只逐行标记 ----
+  // ---- SUSFS compatibility line: draw a continuous rule only if every row from `susfsFirstIndex` onward is clean ----
   var susfsFirstIndex = -1;
   var susfsContiguous = false;
   for (var s0 = rows.length - 1; s0 >= 0; s0--) {
@@ -166,7 +167,7 @@ export function buildBranchModel(data, meta, probe) {
   }
   if (!susfsContiguous) susfsFirstIndex = -1;
 
-  // ---- 版本块：连续相同版本合并；弃用截止线穿过时按规则线切开 ----
+  // ---- Version runs: group consecutive identical kernel versions; split runs across the deprecation cutoff ----
   var runStart = 0;
   var prevRunSub = null;
   function closeRun(start, end) {
@@ -176,7 +177,7 @@ export function buildBranchModel(data, meta, probe) {
     for (var j = start; j < end; j++) {
       rows[j].runLen = len;
       rows[j].runPos = j - start;
-      rows[j].runHead = j === end - 1;   // 展示为倒序，块首是最晚的月份
+      rows[j].runHead = j === end - 1;   // Displayed in reverse chronological order, so the latest month heads the run
       rows[j].runCont = j !== end - 1;
       rows[j].runDelta = runDelta;
     }
@@ -192,7 +193,7 @@ export function buildBranchModel(data, meta, probe) {
     }
   }
 
-  // LTS 标记落在该版本的块首
+  // Place the LTS badge on the head row of the matching version run
   if (lts) {
     for (var k = rows.length - 1; k >= 0; k--) {
       if (rows[k].kernel === lts && rows[k].runHead) { rows[k].isLts = true; break; }
@@ -203,12 +204,12 @@ export function buildBranchModel(data, meta, probe) {
   var last = rows.length ? rows[rows.length - 1] : null;
   var ltsState = lts ? susfsOf('lts', lts) : { susfs: false, rej: false, failed: false, probed: false, unknown: false, rejCount: 0 };
 
-  // 兼容线起点：探测且连续时取该行版本，否则退回阈值
+  // SUSFS threshold kernel string: take first contiguous clean row when available, else fallback threshold
   var susfsMinKernel = '';
   if (susfsFirstIndex !== -1) susfsMinKernel = rows[susfsFirstIndex].kernel;
   else if (!probeInfo && susfsMin != null) susfsMinKernel = meta.kernel + '.' + susfsMin;
 
-  // ---- 月份刻度尺：从起始月到最新月的每一个自然月，无记录的月份沿用前一条记录的 SUSFS 状态 ----
+  // ---- Month ruler: every calendar month from first to last; months without a release inherit the previous SUSFS state ----
   var months = [];
   if (first && last) {
     var byDate = {};
@@ -253,7 +254,7 @@ export function buildBranchModel(data, meta, probe) {
     ltsSusfsState: ltsState,
     cutoff: cutoff,
     deprecatedCount: deprecatedCount,
-    // 全部条目均已弃用时视为整分支弃用
+    // Branch is fully deprecated when every release entry falls at or before the cutoff
     fullyDeprecated: rows.length > 0 && deprecatedCount === rows.length,
     monotonic: monotonic,
     probe: probeInfo,
@@ -270,7 +271,7 @@ export function buildBranchModel(data, meta, probe) {
   };
 }
 
-// 汇总多个分支的读数：最新月份、分支数、总条目数
+// Aggregate masthead readout summary across all branches: latest patch month, branch count, total releases
 export function buildSummary(models) {
   var latest = '';
   var total = 0;

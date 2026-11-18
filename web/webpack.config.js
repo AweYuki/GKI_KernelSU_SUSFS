@@ -1,7 +1,7 @@
 const path = require('path');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
-// 两个入口：仪表盘（index.html）与教程页（guide.html）共用同一套设计令牌与基础模块
+// Two entry points: dashboard (index.html) and guide (guide.html) share the same design tokens and base modules
 module.exports = {
   entry: {
     app: './js/main.js',

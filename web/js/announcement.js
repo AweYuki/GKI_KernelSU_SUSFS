@@ -1,5 +1,5 @@
 /**
- * 公告「号外」：原生 <dialog>，含简易 Markdown 渲染与「今日不再显示」
+ * Announcement modal: native <dialog> with lightweight Markdown rendering and "Don't show today".
  */
 
 import { lang } from './i18n.js';
@@ -18,7 +18,7 @@ var loaded = false;
 var DISMISS_KEY = 'announce_dismiss';
 var SEEN_KEY = 'announce_seen';
 
-// 获取当前本地日期字符串
+// Get current local date string (YYYY-MM-DD)
 function localDateStr() {
   var d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -28,14 +28,14 @@ var getItem = getStored;
 var setItem = setStored;
 var latestDate = '';
 
-// ---- 简易 Markdown 渲染 ----
+// ---- Lightweight Markdown renderer ----
 
-// 渲染行内 Markdown（代码、链接、加粗、斜体）
+// Render inline Markdown (code, links, bold, italic)
 function renderInlineMarkdown(text) {
   var html = esc(text == null ? '' : String(text));
   var codeTokens = [];
 
-  // 先把行内代码换成占位符，避免其中的星号、方括号被后续规则误伤
+  // Replace inline code spans with placeholders first so asterisks/brackets inside aren't parsed
   html = html.replace(/`([^`\n]+)`/g, function (_, codeText) {
     codeTokens.push('<code>' + codeText + '</code>');
     return '<!--CODE' + (codeTokens.length - 1) + '-->';
@@ -54,7 +54,7 @@ function renderInlineMarkdown(text) {
   });
 }
 
-// 渲染块级 Markdown（标题、列表、引用、代码块、段落）
+// Render block-level Markdown (headings, lists, blockquotes, code blocks, paragraphs)
 function renderMarkdown(markdownText) {
   var normalized = String(markdownText == null ? '' : markdownText)
     .replace(/\r\n?/g, '\n')
@@ -87,7 +87,7 @@ function renderMarkdown(markdownText) {
       return;
     }
 
-    // 同一块内允许「段落行 + 列表行」混排：按行首标记切成若干段分别渲染
+    // Allow mixed paragraph lines and list lines within the same block by splitting into segments
     var segments = [];
     lines.forEach(function (line) {
       var kind = /^\s*[-*]\s+/.test(line) ? 'ul' : /^\s*\d+\.\s+/.test(line) ? 'ol' : 'p';
@@ -113,19 +113,22 @@ function renderMarkdown(markdownText) {
   return out.join('');
 }
 
-// 标准化公告文本（数组按行拼接）
+// Normalize announcement text (join array of lines if needed)
 function normalizeAnnouncementText(value) {
   if (Array.isArray(value)) return value.join('\n');
   if (value == null) return '';
   return String(value);
 }
 
-// 根据当前语言获取公告内容
+// Select announcement text matching the active language
 function getAnnouncementText(item) {
+  if (lang === 'vi') {
+    return normalizeAnnouncementText(item.content_vi_md || item.content_vi || item.content_md || item.content);
+  }
   if (lang === 'zh') {
     return normalizeAnnouncementText(item.content_zh_md || item.content_zh || item.content_md || item.content);
   }
-  return normalizeAnnouncementText(item.content_md || item.content || item.content_zh_md || item.content_zh);
+  return normalizeAnnouncementText(item.content_md || item.content || item.content_vi_md || item.content_zh_md);
 }
 
 function hideAnnounce() {
@@ -133,12 +136,12 @@ function hideAnnounce() {
   closeDialog(dialog);
 }
 
-// auto = 页面加载时自动弹出：焦点落在对话框本身，避免首屏出现突兀的按钮焦点环
+// When auto = true (opened automatically on page load), focus the dialog itself to avoid a jarring button focus ring
 function showAnnounce(auto) {
   dismissCheck.checked = false;
   openBtn.classList.remove('has-unread');
   openBtn.removeAttribute('data-unread');
-  // 真正展示给用户时才记为已读
+  // Mark as seen only when actually presented to the user
   if (latestDate) setItem(SEEN_KEY, latestDate);
   openDialog(dialog);
   if (auto) dialog.focus();
@@ -151,7 +154,7 @@ export function initAnnouncement() {
   dialog.addEventListener('click', function (e) {
     if (e.target === dialog) hideAnnounce();
   });
-  // Esc 关闭时同样尊重「今日不再显示」
+  // Respect "Don't show today" when dismissed via Escape as well
   dialog.addEventListener('cancel', function () {
     if (dismissCheck.checked) setItem(DISMISS_KEY, localDateStr());
   });
@@ -188,7 +191,7 @@ async function loadAnnouncement() {
     loaded = true;
     openBtn.hidden = false;
 
-    // 未读点：最新公告日期比上次真正看过的新
+    // Unread indicator: show dot when the latest announcement date is newer than the last seen date
     var seen = getItem(SEEN_KEY) || '';
     var unread = latestDate > seen;
     openBtn.classList.toggle('has-unread', unread);
@@ -197,6 +200,6 @@ async function loadAnnouncement() {
     if (getItem(DISMISS_KEY) === localDateStr()) return;
     showAnnounce(true);
   } catch (e) {
-    // 公告为可选内容，加载失败不阻断主页面
+    // Announcements are optional; ignore load failures without blocking the main page
   }
 }

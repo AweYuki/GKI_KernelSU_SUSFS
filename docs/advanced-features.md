@@ -1,130 +1,131 @@
 <div align="center">
 
-# 🧩 进阶功能文档
+# 🧩 Advanced Features
 
-**GhostLock 安全修复 · Droidspaces 容器支持 · 自定义提交配置 · 伪装 `/proc/config.gz`**
+**GhostLock Security Fix · Droidspaces Container Support · Custom Commit Pinning · Spoofing `/proc/config.gz`**
 
-[English](advanced-features-en.md) | 简体中文
+English | [**Tiếng Việt**](advanced-features-vi.md) | [**简体中文**](advanced-features-zh.md)
 
-[⬅ 返回 README](../README.md)
+[⬅ Back to README](../README.md)
 
 ---
 
 </div>
 
-## 目录
+## Contents
 
-- [🛡️ GhostLock 安全修复](#️-ghostlock-安全修复)
-- [🧪 Droidspaces 容器支持（实验性）](#-droidspaces-容器支持实验性)
-- [🔧 自定义提交配置](#-自定义提交配置)
-- [🧪 伪装 `/proc/config.gz`（Stock Config）](#-伪装-procconfiggzstock-config)
-
----
-
-## 🛡️ GhostLock 安全修复
-
-GhostLock 是影响 Linux 内核的一组高风险漏洞，包括 `CVE-2026-43499` 和 `CVE-2026-53163`。攻击者不需要 Root 权限，也不需要额外的内核模块，只要能够在设备上运行普通应用或本地代码，就可能利用该漏洞。
-
-### 可能造成的危害
-
-- **系统崩溃或强制重启：** 普通应用即可触发内核崩溃，导致设备无法正常使用，未保存的数据也可能丢失。
-- **本地权限提升：** 更复杂的利用可以绕过 Android 权限边界，让普通应用获得内核级权限，进而控制整个设备。
-- **现成利用已经公开：** 目前已有拒绝服务 PoC，以及针对 Android ARM64 平台的完整提权利用链，风险不再停留在理论阶段。
-- **没有可靠的临时规避方法：** 常见的权限限制、应用隔离或系统加固只能增加利用难度，无法彻底阻止系统崩溃或其他利用方式。
-
-该漏洞不能直接从网络远程触发，但恶意应用、共享运行环境中的不可信程序，或者已经通过其他漏洞取得代码执行能力的攻击者，都可以进一步利用它。因此，安装来源不明的应用、模块或脚本时尤其需要注意。
-
-本项目支持在构建 5.10、5.15、6.1、6.6 和 6.12 内核时检查并应用完整修复。该选项默认关闭，如需加入 GhostLock 防护，请在触发构建时手动开启 `CVE-2026-43499 rtmutex 修复链`。两个漏洞的修复必须同时存在，工作流会自动处理这一点；已经包含完整修复的内核不会重复打补丁。
-
-该修复已完成 [84 个内核版本的全量构建验证](https://github.com/zzh20188/GKI_KernelSU_SUSFS/actions/runs/29509099128)。如果想了解漏洞原理、受影响范围、公开利用和缓解措施，请阅读 CIQ 的详细文章：[GhostLock Mitigation](https://kb.ciq.com/article/rocky-linux/rl-ghostlock-mitigation)。
+- [🛡️ GhostLock Security Fix](#️-ghostlock-security-fix)
+- [🧪 Droidspaces Container Support (Experimental)](#-droidspaces-container-support-experimental)
+- [🔧 Custom Commit Pinning](#-custom-commit-pinning)
+- [🧪 Spoof `/proc/config.gz` (Stock Config)](#-spoof-procconfiggz-stock-config)
 
 ---
 
-## 🧪 Droidspaces 容器支持（实验性）
+## 🛡️ GhostLock Security Fix
 
-> **实验性功能：** 不保证所有 GKI 版本均能成功构建或启动，刷入前请务必备份 Boot 镜像。
+GhostLock is a pair of high-risk Linux kernel vulnerabilities tracked as `CVE-2026-43499` and `CVE-2026-53163`. An attacker does not need Root access or an additional kernel module. The vulnerability may be exploited by any application or local process that can run code on the device.
+
+### Potential impact
+
+- **System crash or forced reboot:** An ordinary application can crash the kernel, making the device unavailable and potentially causing the loss of unsaved data.
+- **Local privilege escalation:** A more advanced exploit can cross Android security boundaries and give an ordinary application kernel-level control of the device.
+- **Public exploits are available:** Both a denial-of-service proof of concept and a complete privilege-escalation chain targeting Android ARM64 have been published. This is no longer a theoretical risk.
+- **No reliable temporary workaround exists:** Permission restrictions, application isolation, and hardening options may make exploitation harder, but they cannot fully prevent crashes or alternative exploit methods.
+
+The vulnerability cannot be triggered directly over the network. However, a malicious application, untrusted code in a shared environment, or an attacker who already gained code execution through another vulnerability can use GhostLock as the next step. Extra care should therefore be taken with applications, modules, and scripts from unknown sources.
+
+This project can check and apply the complete fix when building kernels 5.10, 5.15, 6.1, 6.6, and 6.12. The option is disabled by default. To include GhostLock protection, manually enable `Apply CVE-2026-43499 rtmutex fix chain` when starting a build. Both vulnerability fixes must be present together, and the workflow handles this automatically. Kernels that already contain the complete fix are not patched again.
+
+The fix has passed a [full upstream build validation covering 84 kernel versions](https://github.com/zzh20188/GKI_KernelSU_SUSFS/actions/runs/29509099128). For vulnerability details, affected systems, public exploits, and mitigation guidance, read CIQ's article: [GhostLock Mitigation](https://kb.ciq.com/article/rocky-linux/rl-ghostlock-mitigation).
+
+---
+
+## 🧪 Droidspaces Container Support (Experimental)
+
+> **Experimental feature:** Successful build and boot is not guaranteed across all GKI versions. Always back up your boot image before flashing.
 >
-> **TIPS：** 工作流使用的是 [Droidspaces](https://github.com/ravindu644/Droidspaces-OSS) 的 [官方补丁](https://github.com/ravindu644/Droidspaces-OSS/tree/main/Documentation/resources/kernel-patches/GKI) ，如有更好的补丁可以提个issues，此外由于存在三个补丁，或许需要反复试验以确保其中一个适配你的机型，请根据他人或实际经验来选择。
+> **TIPS:** The workflow uses the [official Droidspaces patches](https://github.com/ravindu644/Droidspaces-OSS/tree/main/Documentation/resources/kernel-patches/GKI) from [Droidspaces](https://github.com/ravindu644/Droidspaces-OSS). If you have better patches, feel free to open an issue. Since there are three patch variants, you may need to test them repeatedly to find one that fits your device. Choose based on other users' feedback or your own experience.
 
-[Droidspaces](https://github.com/ravindu644/Droidspaces-OSS) 是一个轻量级的 Linux 容器工具，可以在 Android 上运行完整的 Linux 环境（支持 systemd、OpenRC 等），用于搭建开发环境、运行服务器等场景。
+[Droidspaces](https://github.com/ravindu644/Droidspaces-OSS) is a lightweight Linux containerization tool that lets you run full Linux environments (with systemd, OpenRC, etc.) on Android — useful for development, running servers, and more.
 
-**支持范围：** 5.10 / 5.15 / 6.1 / 6.6 / 6.12
+**Supported versions:** 5.10 / 5.15 / 6.1 / 6.6 / 6.12
 
-**使用方式：** 在手动触发构建时，选择 `Droidspaces 容器支持` 选项：
+**Usage:** When triggering a build manually, select the `Droidspaces` option:
 
-| 选项 | 说明 |
+| Option | Description |
 |:---:|:---|
-| `off` | 关闭（默认） |
-| `678` | 使用 6_7_8 槽位补丁（推荐） |
-| `123` | 使用 1_2_3 槽位补丁（备用） |
-| `345` | 使用 3_4_5 槽位补丁（备用） |
+| `off` | Disabled (default) |
+| `678` | Use 6_7_8 slot patch (recommended) |
+| `123` | Use 1_2_3 slot patch (fallback) |
+| `345` | Use 3_4_5 slot patch (fallback) |
 
-> **提示：** 6.12 内核仅有一个补丁，选择任意非关闭选项即可。
+> **Note:** Kernel 6.12 has only one patch — any non-off option will use it.
 
-**如果构建失败或刷入后 bootloop：** 可尝试切换到其他槽位补丁（如 678 → 123 或 345），不同内核子版本可能适用不同的补丁。
+**If the build fails or bootloops after flashing:** Try switching to a different slot patch (e.g. 678 → 123 or 345). Different kernel sub-levels may require different patches.
 
 ---
 
-## 🔧 自定义提交配置
+## 🔧 Custom Commit Pinning
 
-通过 [`config/config`](../config/config) 文件可以指定 SUSFS 和 SukiSU 使用特定的 commit。
+Use the [`config/config`](../config/config) file to pin SUSFS and AweYukiSU to specific commits.
 
-**什么是提交 (commit)？**
+**What is a commit?**
 
-提交是一串哈希字符串，代表仓库在某个时间点的状态。例如将 sukisu 设为 `4b8644515fe6d87a109129e590ccd9d33a855dca`，即使用 1 月 30 日的 SukiSU 版本编译内核。
+A commit is a hash string representing the state of a repository at a specific point in time. For example, setting `aweyukisu` to `7b65bde0710b5e7c6f755545cb15a4abd417f3a8` pins the kernel build to that exact AweYukiSU revision.
 
-**为什么要指定提交？**
+**Why pin a commit?**
 
-- 当上游仓库更新引入 bug 或兼容性问题时，可回退到稳定版本
-- 当 SUSFS 与 SukiSU 版本不同步导致编译失败时，可手动指定兼容的版本
+- When upstream updates introduce bugs or compatibility issues, you can roll back to a stable version
+- When SUSFS and AweYukiSU versions are out of sync causing build failures, you can manually specify compatible versions
 
-**如何获取提交哈希？**
+**How to get a commit hash?**
 
 - SUSFS: [susfs4ksu](https://gitlab.com/simonpunk/susfs4ksu)
-- SukiSU: [SukiSU-Ultra commits/builtin](https://github.com/SukiSU-Ultra/SukiSU-Ultra/commits/builtin/)
+- AweYukiSU: [AweYuki/AweYukiSU commits/main](https://github.com/AweYuki/AweYukiSU/commits/main/)
 
-以 SUSFS 为例，先选择分支，再复制对应提交的哈希值：
+Taking SUSFS as an example, first select the branch, then copy the commit hash:
 
-![选择分支](../assets/susfs_branch.png)
-![复制提交](../assets/susfs_commit.png)
+![Select branch](../assets/susfs_branch.png)
+![Copy commit](../assets/susfs_commit.png)
 
 ```ini
-# 启用自定义提交
+# Enable custom commits
 custom=true
 
-# SUSFS 各分支的 commit hash
+# SUSFS commit hash per branch
 gki-android12-5.10=
 gki-android13-5.15=
 gki-android14-6.1=
 gki-android15-6.6=
+gki-android16-6.12=
 
-# SukiSU 的 commit hash
-sukisu=
+# AweYukiSU commit hash
+aweyukisu=
 ```
 
-> 留空则使用该分支的最新提交。
+> Empty value = use the latest commit of that branch.
 
 ---
 
-## 🧪 伪装 `/proc/config.gz`（Stock Config）
+## 🧪 Spoof `/proc/config.gz` (Stock Config)
 
-这是一个进阶技巧，不需要在工作流里手动开关。  
-构建时会自动检测 `config/stock_defconfig` 是否存在：存在则应用，不存在则跳过。
+This is an advanced trick and requires no workflow toggle.  
+The build process auto-detects whether `config/stock_defconfig` exists: if present, it is applied; if absent, it is skipped.
 
-使用方法：
-1. 确保设备当前是官方 ROM + 官方内核。
-2. 获取设备上的 `/proc/config.gz`（可在手机端或电脑端操作）。
-3. 解压后重命名为 `stock_defconfig`，上传到仓库 [`config/`](../config/) 目录并提交（可直接在手机端完成）。
+How to use:
+1. Make sure your device is running stock ROM + stock kernel.
+2. Obtain `/proc/config.gz` from your device (phone-side or PC-side workflow both work).
+3. Decompress it, rename it to `stock_defconfig`, upload it to the [`config/`](../config/) directory in your repo, and commit (can be done directly on phone).
 
-构建流程会自动：
-- 复制到内核源码：`$KERNEL_ROOT/common/arch/arm64/configs/stock_defconfig`
-- 在 `$KERNEL_ROOT/common/kernel/Makefile` 中将 `$(obj)/config_data` 规则从 `$(KCONFIG_CONFIG)` 切换为 `arch/arm64/configs/stock_defconfig`
-- 使编译产物中的 `/proc/config.gz` 更贴近你的官方内核配置
+During the build, the workflow will automatically:
+- Copy it to `$KERNEL_ROOT/common/arch/arm64/configs/stock_defconfig`
+- In `$KERNEL_ROOT/common/kernel/Makefile`, switch the `$(obj)/config_data` rule from `$(KCONFIG_CONFIG)` to `arch/arm64/configs/stock_defconfig`
+- Make `/proc/config.gz` in the built kernel closer to your stock kernel config
 
 ---
 
 <div align="center">
 
-[⬅ 返回 README](../README.md) · [English](advanced-features-en.md)
+[⬅ Back to README](../README.md) · [Tiếng Việt](advanced-features-vi.md) · [简体中文](advanced-features-zh.md)
 
 </div>

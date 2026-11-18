@@ -1,6 +1,6 @@
 /**
- * 时间转换器模块：日期 + 时间 → 内核版本串使用的 UTC 字符串
- * 输入框由 render.js 生成并随当前分支移动，事件用委托处理
+ * Time converter module: convert date + time into the UTC string format used by kernel version strings.
+ * Inputs are rendered by render.js and moved across branches, so events are handled via delegation.
  */
 
 export function initTimeConverter() {
@@ -30,7 +30,7 @@ export function initTimeConverter() {
     tcCopy.dataset.copy = utcStr;
   }
 
-  // 首次渲染后填入当前 UTC 时间
+  // Seed inputs with the current UTC timestamp after initial render
   function seed() {
     var tcDate = document.getElementById('tcDate');
     var tcTime = document.getElementById('tcTime');

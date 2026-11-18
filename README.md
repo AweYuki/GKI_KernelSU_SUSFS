@@ -3,78 +3,71 @@
 # GKI KernelSU SUSFS
 ### 🏮 2026 🐎 Happy New Year! 🏮
 
-**自动化构建 GKI 内核 | 集成 KernelSU + SUSFS**
+**Automated GKI Kernel Builds | AweYukiSU + SUSFS Integrated**
 
-[![Release](https://img.shields.io/github/v/release/zzh20188/GKI_KernelSU_SUSFS?label=Release&style=flat-square&logo=github&logoColor=white&color=2ea44f)](https://github.com/zzh20188/GKI_KernelSU_SUSFS/releases)
+[![Release](https://img.shields.io/github/v/release/AweYuki/GKI_KernelSU_SUSFS?label=Release&style=flat-square&logo=github&logoColor=white&color=2ea44f)](https://github.com/AweYuki/GKI_KernelSU_SUSFS/releases)
 [![Coolapk](https://img.shields.io/badge/Follow-Coolapk-3DDC84?style=flat-square&logo=android&logoColor=white)](http://www.coolapk.com/u/11253396)
-[![KernelSU](https://img.shields.io/badge/KernelSU-Supported-5AA300?style=flat-square)](https://kernelsu.org/)
+[![AweYukiSU](https://img.shields.io/badge/AweYukiSU-Supported-5AA300?style=flat-square)](https://github.com/AweYuki/AweYukiSU)
 [![SUSFS](https://img.shields.io/badge/SUSFS-Integrated-E67E22?style=flat-square)](https://gitlab.com/simonpunk/susfs4ksu)
 
-[**English**](README-EN.md) | 简体中文
+English | [**Tiếng Việt**](README-VI.md) | [**简体中文**](README-ZH.md)
 
 ---
 
 </div>
 
-## 🚀 快速导航
+## 🚀 Quick Navigation
 
-- 📖 [文档](https://github.com/zzh20188/GKI_KernelSU_SUSFS/wiki)
-- 📥 [下载](https://github.com/zzh20188/GKI_KernelSU_SUSFS/releases)
-- 🔰 [教程](https://zzh20188.github.io/GKI_KernelSU_SUSFS/guide.html)
-
----
-
-## 最近更新
-
-1. 并行工作流磁盘清理，增加整体速度
-2. 修复拉取源码、仓库、工具概率失败的问题
-3. 同步上游SUSFS更新，兼容不被支持的GKI版本
-4. 翻新网页UI风格
-5. RELEASE 新上传 SUSFS补丁，对应 **上游的 `50_add_susfs_in_gki-内核版本.patch`和其他文件**（除了 `10_enable_susfs_for_ksu.patch`，它已被 sukisu 内置），可替代使用，不会产生SUSFS侧的报错，不会构建内核则不需要,通常在源码目录拉取sukisu然后执行本补丁，就可运行构建脚本或bash命令进行了，省略很多步骤
-6. 新增 **NoMount 挂载元模块**（构建时可选开关）：在内核 `fs/` 层集成 [maxsteeel/NoMount](https://github.com/maxsteeel/nomount)，提供无需传统挂载点的模块挂载方案，可与任意 KSU 变体及 SUSFS 共存。开启后需自行刷入配套的 NoMount 模块使用
-7. 新增 **网络增强**（构建时可选开关，默认关闭）：BBRv3 等网络功能增强
-
-## SukiSU 上游同步
-
-工作流中的 `SukiSU` 选项现对应 [SukiSU-Nova](https://github.com/SukiSU-Nova/SukiSU-Nova)，保留输入键以兼容现有调用。新版版本号按 `30000 + main 提交数 - 4001` 计算，Manager 只选择同一版本规则的 main 构建，优先使用 `manager-ci` Release，历史 Actions 产物兜底。`SukiSU(40726)` / `SukiSU(40548)` 继续使用固定的旧版源码、版本号与 Manager，不随 Nova 重置。
-
-## ⚠️ 兼容性提醒
-
-> **注意：** 目前不支持一加 ColorOS 14、15，刷入后可能需要清除数据开机。
->
-> **SUKISU最新版:** 已经恢复构建，但不兼容6.12
->
-> 增加了老版本SukiSU的构建，若使用老版本内核最好搭配同样版本的管理器，老版本完全使用以前的SUKISU和SUSFS代码，因此不包含最近的特性或bug
-> 
-> <img width="296" height="152" alt="image" src="https://github.com/user-attachments/assets/e60316c3-c760-4178-a4c8-b94d0ef0b5b2" />
-
-
+- 📖 [Documentation](https://github.com/AweYuki/GKI_KernelSU_SUSFS/wiki)
+- 📥 [Downloads](https://github.com/AweYuki/GKI_KernelSU_SUSFS/releases)
+- 🔰 [Tutorial](https://aweyuki.github.io/GKI_KernelSU_SUSFS/guide.html)
 
 ---
 
-## 📚 文档与指南
+## Recent Updates
 
-详细说明请查阅 [**GitHub Wiki（中英双语）**](https://github.com/zzh20188/GKI_KernelSU_SUSFS/wiki)
+1. Disk cleanup now runs in parallel across workflows, speeding up overall builds
+2. Fixed intermittent failures when fetching kernel sources, repositories, and tools
+3. Synced upstream SUSFS updates and added compatibility with unsupported GKI versions
+4. Refreshed the web UI style
+5. Releases now also ship the SUSFS patches, corresponding to **upstream `50_add_susfs_in_gki-<kernel version>.patch` and the other files** (except `10_enable_susfs_for_ksu.patch`, which is already built into AweYukiSU). They can be used as a drop-in replacement without SUSFS-side errors. This is not needed if you do not build kernels: typically you set up AweYukiSU in the source tree and apply this patch, then run the build script or bash commands directly, skipping many steps
+6. Added **NoMount metamodule** (optional build-time toggle): integrates [maxsteeel/NoMount](https://github.com/maxsteeel/nomount) into the kernel `fs/` layer, providing a mountless module mounting solution that coexists with AweYukiSU and SUSFS. When enabled, you must flash the companion NoMount module yourself to use it
+7. Added **Networking enhancements** (optional build-time toggle, disabled by default): BBRv3 and other networking feature enhancements
+8. Integrated upstream **WildKernels patch suites & compatibility fixes** (optional build-time toggles + automatic sublevel fixups): **USB Arsenal** ([ravindu644/USB-Arsenal](https://github.com/ravindu644/USB-Arsenal)), **GKI Ptrace (`< 5.16`)**, **Performance & Power Optimizations** (`WildKernels/kernel_patches/common`), **Module Version Mismatch Bypass**, standalone **NTSync** (with 5.10 lockdep prerequisites), Samsung 6.6 `min_kdp` STG fallback, and Bazel protected-module fixes
 
-Wiki 涵盖内容：
-- [**🔰 教程**](https://zzh20188.github.io/GKI_KernelSU_SUSFS/guide.html)
-- 📥 下载/刷入内核
-- 💡 使用技巧 Tips
-- 🆘 救砖指南
-- 📊 内核版本兼容性说明
-- 🧩 [**进阶功能文档**](docs/advanced-features.md)：GhostLock 安全修复、Droidspaces 容器支持、自定义提交配置、伪装 `/proc/config.gz`
+## AweYukiSU Integration
+
+All build workflows exclusively integrate [**AweYukiSU**](https://github.com/AweYuki/AweYukiSU) (a fork of BakaSU) paired with SUSFS inline hooks and Magic Mount. Version codes follow `30700 + main commit count`.
+
+## ⚠️ Compatibility Notice
+
+> **Note:** OnePlus ColorOS 14/15 is currently not supported. A data wipe may be required to boot after flashing.
 
 ---
 
-## 🛠️ 安装后推荐
+## 📚 Documentation & Guides
 
-### 📦 模块推荐
+For detailed instructions, please refer to the [**GitHub Wiki (bilingual CN/EN)**](https://github.com/AweYuki/GKI_KernelSU_SUSFS/wiki)
+
+Wiki covers:
+- [**🔰 Tutorial**](https://aweyuki.github.io/GKI_KernelSU_SUSFS/guide.html)
+- 📥 Download / Flash kernel
+- 💡 Tips & Tricks
+- 🆘 Brick Recovery Guide
+- 📊 Kernel Version Compatibility
+- 🧩 [**Advanced Features**](docs/advanced-features.md): GhostLock Security Fix, Droidspaces Container Support, Custom Commit Pinning, Spoofing `/proc/config.gz`
+
+---
+
+## 🛠️ Post-Install Recommendations
+
+### 📦 Recommended Modules
 
 <table>
 <tr>
-<th>模块名称</th>
-<th>仓库</th>
-<th>频道</th>
+<th>Module</th>
+<th>Repository</th>
+<th>Channel</th>
 </tr>
 <tr>
 <td><b>LSPosed-Irena</b></td>
@@ -92,23 +85,23 @@ Wiki 涵盖内容：
 </tr>
 </table>
 
-### 🔧 Xposed 模块
+### 🔧 Xposed Modules
 
-| 模块 | 说明 |
+| Module | Description |
 |:---:|:---|
-| **FuseFixer** | [Unicode零宽修复模块](https://t.me/real5ec1cff/268) |
+| **FuseFixer** | [Unicode zero-width fix module](https://t.me/real5ec1cff/268) |
 
 ### App
 
-| 名称 | 说明 |
+| Name | Description |
 |:---:|:---|
-| **Scene** | [官网](https://omarea.com/#/) |
+| **Scene** | [Official Site](https://omarea.com/#/) |
 ---
 
 <div align="center">
 
-**更多内容持续更新中...**
+**More content coming soon...**
 
-⭐ 如果这个项目对你有帮助，请点个 Star 支持一下！
+⭐ If this project helps you, please give it a Star!
 
 </div>

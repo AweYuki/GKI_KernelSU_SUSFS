@@ -1,5 +1,5 @@
 /**
- * 搜索模块：过滤当前分支的版本行；「/」聚焦，Esc 清空
+ * Search module: filter release rows in the active branch; `/` focuses input, `Escape` clears it.
  */
 
 import { t } from './i18n.js';
@@ -17,7 +17,7 @@ export function getQuery() {
   return input.value.trim().toLowerCase();
 }
 
-// 清空搜索词并恢复列表（刻度尺跳转到被过滤掉的行时使用）
+// Clear search query and restore full list (used when jumping from the month ruler to a filtered-out row)
 export function clearSearch() {
   if (!input.value) return;
   input.value = '';
@@ -33,7 +33,7 @@ export function initSearch() {
     input.focus();
   });
 
-  // 账册无结果态里的「清除」按钮
+  // "Clear" button inside the ledger empty-results state
   document.addEventListener('click', function (e) {
     if (!e.target.closest('.ledger__clear')) return;
     input.value = '';
@@ -49,7 +49,7 @@ export function initSearch() {
     }
   });
 
-  // 「/」快捷键聚焦搜索
+  // `/` keyboard shortcut to focus search
   document.addEventListener('keydown', function (e) {
     if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
     var active = document.activeElement;
@@ -65,7 +65,7 @@ export function initSearch() {
     input.select();
   });
 
-  // 手机：放大镜展开 / 收起输入框
+  // Mobile: magnifying-glass button expands / collapses the search input row
   toggleBtn.addEventListener('click', function () {
     var open = nav.classList.toggle('search-open');
     toggleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
@@ -79,7 +79,7 @@ export function initSearch() {
   });
 }
 
-// 过滤当前分支；分支切换后也会调用
+// Filter rows in the active branch panel; also invoked after switching branches
 export function filterActive() {
   var query = getQuery();
   searchWrap.classList.toggle('has-query', !!query);
@@ -102,10 +102,10 @@ export function filterActive() {
 
   ledger.classList.toggle('is-filtered', !!query);
 
-  // 折叠偏好在有搜索词时不生效；同时会重置年份组显隐
+  // Deprecated collapse preference is suspended while filtering; also resets year-group visibility
   applyCollapse(ledger, readCollapsePref(), !!query);
 
-  // 过滤态下没有可见行的年份组隐藏
+  // Hide year groups that have no visible matching rows while filtering
   if (query) {
     ledger.querySelectorAll('.year').forEach(function (g) {
       g.hidden = g.querySelectorAll('.row:not([hidden])').length === 0;
@@ -120,6 +120,6 @@ export function filterActive() {
   }
 
   countEl.textContent = query ? fmt(t.searchCount, { n: shown, total: total }) : '';
-  // 计数出现或消失会改变导航布局，指示线需要重算
+  // Showing or hiding the match count shifts nav layout, so realign the active tab indicator
   refreshIndicator();
 }

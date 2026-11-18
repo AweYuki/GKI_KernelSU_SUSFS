@@ -15,6 +15,19 @@
         "",
         "👉 [Open the Guide](guide.html)"
       ],
+      "content_vi_md": [
+        "## 📖 Mới: Hướng dẫn cho người mới bắt đầu",
+        "",
+        "Nếu đây là lần đầu bạn sử dụng dự án, chúng tôi khuyên bạn nên xem **Hướng dẫn Fork & Tự Build Kernel** để bắt đầu.",
+        "",
+        "Hướng dẫn sẽ chỉ cho bạn từng bước:",
+        "- Fork kho lưu trữ về tài khoản của bạn",
+        "- Bật GitHub Actions",
+        "- Chạy bản build kernel tùy chỉnh",
+        "- Tải xuống các gói sản phẩm sau khi build (artifacts)",
+        "",
+        "👉 [Mở hướng dẫn](guide.html)"
+      ],
       "content_zh_md": [
         "## 📖 新手教程已上线",
         "",
@@ -39,7 +52,17 @@
         "- Supports Android 12/13/14/15",
         "- Incremental update every week",
         "",
-        "Details: [GitHub Repository](https://github.com/zzh20188/GKI_KernelSU_SUSFS)"
+        "Details: [GitHub Repository](https://github.com/AweYuki/GKI_KernelSU_SUSFS)"
+      ],
+      "content_vi_md": [
+        "## Trình theo dõi phiên bản Kernel GKI",
+        "",
+        "Bảng theo dõi đã chính thức hoạt động. Bạn có thể xem tất cả các nhánh đang được duy trì tại cùng một nơi.",
+        "",
+        "- Hỗ trợ Android 12/13/14/15",
+        "- Tự động cập nhật bổ sung hàng tuần",
+        "",
+        "Chi tiết: [Kho lưu trữ GitHub](https://github.com/AweYuki/GKI_KernelSU_SUSFS)"
       ],
       "content_zh_md": [
         "## GKI 内核版本追踪器",
@@ -49,7 +72,7 @@
         "- 支持 Android 12/13/14/15",
         "- 每周自动增量更新",
         "",
-        "详情：[GitHub 仓库](https://github.com/zzh20188/GKI_KernelSU_SUSFS)"
+        "详情：[GitHub 仓库](https://github.com/AweYuki/GKI_KernelSU_SUSFS)"
       ]
     }
   ]

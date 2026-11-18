@@ -1,4 +1,4 @@
-// ===== 工具条（报头之上的一行） =====
+// ===== Top utility toolbar (single row above masthead) =====
 
 @use 'mixins' as *;
 
@@ -26,7 +26,7 @@
 
   &:hover { color: var(--text); }
 
-  // 手机只显示短站名
+  // Show compact site title only on mobile
   .toolbar__repo-short { display: none; }
 
   @include mobile {
@@ -50,7 +50,7 @@
   @include mobile { gap: 0; }
 }
 
-// 工具条上的文字链接 / 按钮
+// Toolbar text links / icon buttons
 .tb-link {
   @include text-button;
   font-size: var(--fs-12);
@@ -78,7 +78,7 @@
   }
 }
 
-// 公告入口：有未读时前面带一个 6px 朱砂方块
+// Announcement trigger: prefixed with a 6px vermilion square when unread
 .tb-link--announce {
   .tb-link__dot {
     @include square(var(--accent-fill));
@@ -86,7 +86,7 @@
   }
 
   &.has-unread .tb-link__dot { display: inline-block; }
-  // 未读文字只在有未读时进入无障碍树
+  // Expose unread text in the accessibility tree only when unread
   &:not(.has-unread) .tb-link__unread { display: none; }
 
   @include mobile {
@@ -95,7 +95,7 @@
   }
 }
 
-// 语言切换：「中 | EN」两个都显示，当前项主文本色 + 朱砂下划线
+// Language switcher: three-locale inline group; active language uses primary text + vermilion underline
 .lang-switch {
   display: inline-flex;
   align-items: center;
@@ -122,13 +122,14 @@
 
     button {
       height: 40px;
-      min-width: 36px;
-      &::after { bottom: 8px; left: 8px; right: 8px; }
+      min-width: 28px;
+      padding: 0 4px;
+      &::after { bottom: 8px; left: 4px; right: 4px; }
     }
   }
 }
 
-// 主题切换：半填充圆
+// Theme toggle: half-filled circle icon
 .theme-toggle {
   @include text-button;
   width: 24px;

@@ -1,4 +1,4 @@
-// ===== 账册：版本列表（单列、倒序、线的语法） =====
+// ===== Release ledger (single-column, reverse-chronological, ruled grammar) =====
 
 @use 'mixins' as *;
 
@@ -54,12 +54,12 @@
   }
 }
 
-// 表头的页边占位（手机隐藏）
+// Header margin spacer (hidden on mobile)
 .ledger__head-margin {
   @include mobile { display: none; }
 }
 
-// ---- 年份组 ----
+// ---- Year group ----
 
 .year {
   display: grid;
@@ -71,7 +71,7 @@
   &[hidden] { display: none; }
 }
 
-// 页边：年份边注（组内 sticky）+ 弃用斜纹
+// Left margin column: sticky year side-note + deprecated hatching
 .year__margin {
   position: relative;
   border-right: 1px solid var(--hairline);
@@ -91,7 +91,7 @@
   @include below-desktop { font-size: var(--fs-14); }
 }
 
-// 手机：年份变成一行等宽子标题
+// Mobile: year becomes a compact monospace subheading row
 .year__heading {
   display: none;
   @include mono;
@@ -109,7 +109,7 @@
   list-style: none;
 }
 
-// ---- 行 ----
+// ---- Release row ----
 
 .row {
   position: relative;
@@ -150,7 +150,7 @@
   }
 }
 
-// 刚打开过弹窗的行：保留 2px 朱砂左边线
+// Recently inspected row: retain a 2px vermilion left border
 .row.is-visited::before {
   content: '';
   position: absolute;
@@ -161,7 +161,7 @@
   background: var(--accent-fill);
 }
 
-// 刻度尺跳转定位提示
+// Flash highlight when jumped to from the month ruler
 .row.is-flash .row__btn {
   animation: rowFlash 600ms var(--ease);
 }
@@ -209,7 +209,7 @@
   align-items: center;
   gap: 8px;
 
-  // SUSFS 兼容：版本号前一个 6px 青色方块；有 rej 但编译成功则为空心方块
+  // SUSFS compatible: 6px solid teal square before version; hollow square when built with .rej conflicts
   .row.is-susfs &::before { @include square(var(--susfs-fill)); }
   .row.is-susfs-rej &::before {
     @include square(transparent);
@@ -219,7 +219,7 @@
   @include mobile { font-size: var(--fs-20); }
 }
 
-// 版本块延续行：版本号降为 13px 三级色，左缘括线
+// Version-run continuation rows: step down to 13px tertiary text with a left bracket line
 .row.is-cont {
   .row__kernel {
     font-size: var(--fs-13);
@@ -257,7 +257,7 @@
   @include mobile { font-size: var(--fs-11); }
 }
 
-// 标记区：只出现三种小字（SUSFS / 最新 / LTS）
+// Row status marks area (SUSFS / Latest / LTS; plus Deprecated / SUSFS badges when filtered)
 .row__marks {
   display: flex;
   align-items: center;
@@ -297,8 +297,8 @@
   }
 }
 
-// 过滤态才出现的行内文字标签（空间语境消失时徽章才出现）；
-// 非过滤态只对视觉隐藏，读屏仍能听到「已弃用 / SUSFS」
+// Inline text marks shown visually only while filtering (when spatial rule context is hidden);
+// visually hidden otherwise so screen readers still announce "Deprecated / SUSFS"
 .ledger:not(.is-filtered) .mark--filtered-only {
   @include visually-hidden;
 }
@@ -318,7 +318,7 @@
   }
 }
 
-// ---- 弃用行 ----
+// ---- Deprecated rows ----
 
 .row.is-deprecated {
   .row__date,
@@ -328,7 +328,7 @@
   .row__kernel { font-weight: 400; }
 
   @include mobile {
-    // 手机没有页边，斜纹改铺在左侧 4px 边条
+    // Mobile has no left margin column, so apply diagonal hatching to a 4px left strip
     &::after {
       content: '';
       position: absolute;
@@ -342,16 +342,16 @@
   }
 }
 
-// 页边斜纹：从截止线到列表末尾（年份组带 is-dep-margin 时整段页边铺纹）
+// Margin hatching: fill the left margin column for year groups at or below the deprecation cutoff
 .year.is-dep-margin .year__margin {
   @include hatch;
 }
 
-// 弃用折叠态：弃用行与落在弃用区内的 SUSFS 兼容线一并隐藏
+// Collapsed deprecated state: hide deprecated rows and any SUSFS rule falling inside the deprecated zone
 .ledger.is-dep-collapsed .row.is-deprecated { display: none; }
 .ledger.is-dep-collapsed .rule--susfs.is-in-dep { display: none; }
 
-// ---- 规则线（弃用截止 / SUSFS 阈值） ----
+// ---- Horizontal divider rules (deprecation cutoff / SUSFS threshold) ----
 
 .rule {
   list-style: none;
@@ -392,7 +392,7 @@
   .rule__text { flex: 1 1 auto; min-width: 0; }
 }
 
-// 截止线本体：横贯页边 + 行，用 top border 表达
+// Rule border across the row
 .rule--dep { border-top: 1px solid var(--rule); margin-top: -1px; }
 .rule--susfs { border-top: 1px solid var(--susfs-fill); margin-top: -1px; }
 .rule--both {
@@ -415,14 +415,14 @@
   .rule__toggle { margin-left: 36px; padding: 10px 0; min-height: 44px; }
 }
 
-// 过滤态：规则线与页边斜纹隐藏，行内文字标签出现
+// Filtered state: hide spatial divider rules and margin hatching; reveal inline row badges
 .ledger.is-filtered {
   .rule { display: none; }
   .year__note { position: static; }
   .year__margin { background-image: none; }
 }
 
-// 无结果
+// Empty search results state
 .ledger__empty {
   padding: var(--sp-12) 0;
   text-align: center;

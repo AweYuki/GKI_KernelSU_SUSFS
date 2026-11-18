@@ -1,6 +1,6 @@
 /**
- * 国际化模块：多语言文本 + 语言切换
- * 仪表盘与教程页共用同一个存储键 lang
+ * Internationalization module: localized strings and language switcher.
+ * Shared across the dashboard and guide pages via the `lang` storage key.
  */
 
 var I18N = {
@@ -90,7 +90,7 @@ var I18N = {
     modalSusfsCloneWhat: 'susfs4ksu clone command',
     modalOpenSource: 'Open branch on googlesource',
     modalGuide: 'Read the guide',
-    modalHint: 'Paste these values into the “Android 内核构建-自定义” (custom build) workflow inputs, or run the commands locally.',
+    modalHint: 'Paste these values into the “Custom Android Kernel Build” workflow inputs, or run the commands locally.',
     statusDep: 'Security patches are no longer merged for this month',
     statusSusfs: '≥ {kernel} · susfs4ksu patches apply directly',
     statusLts: 'Long-term support tag on {branch}',
@@ -103,8 +103,112 @@ var I18N = {
     closeDialog: 'Close',
     footerPre: 'Data sourced from',
     footerPost: ', refreshed automatically by GitHub Actions.',
-    langZh: '切换到中文',
     langEn: 'Switch to English',
+    langVi: 'Chuyển sang Tiếng Việt',
+    langZh: '切换到中文',
+  },
+  vi: {
+    title: 'Phiên bản Kernel GKI',
+    subtitle: 'Đối chiếu tháng bản vá bảo mật sang sublevel kernel cho mọi nhánh Android GKI. Nhấp vào một bản phát hành để xem tham số build.',
+    tagline: 'Android Generic Kernel Image · Niên giám',
+    readout: 'BẢN VÁ MỚI NHẤT {latest} · {branches} nhánh · {total} bản phát hành',
+    siteShort: 'Niên giám GKI',
+    light: 'Chuyển sang giao diện sáng',
+    dark: 'Chuyển sang giao diện tối',
+    loading: 'Đang tải dữ liệu kernel…',
+    errorTitle: 'Không thể tải dữ liệu kernel.',
+    errorHint: 'Hãy đảm bảo thư mục <code>web/data/</code> có chứa các tệp JSON.',
+    statusActive: 'Đang hoạt động',
+    statusPartly: 'Ngừng hỗ trợ một phần',
+    statusDeprecated: 'Đã ngừng hỗ trợ',
+    releases: 'Bản phát hành',
+    first: 'Đầu tiên',
+    latest: 'Mới nhất',
+    latestKernel: 'Kernel mới nhất',
+    lts: 'LTS',
+    ltsHint: 'Thẻ hỗ trợ dài hạn (LTS) trên nhánh {branch}. Nhấp để xem tham số build.',
+    legendDep: 'Các dòng chữ xám bên dưới đường kẻ · đã ngừng gộp bản vá bảo mật từ {cutoff} trở về trước',
+    legendSusfs: 'Tương thích SUSFS · từ {kernel}, bản vá susfs4ksu có thể áp dụng trực tiếp',
+    legendSusfsAll: 'Tương thích SUSFS · tất cả bản phát hành trên nhánh này',
+    legendSusfsNone: 'SUSFS · chưa có bản phát hành nào trên nhánh này đạt mức {kernel}',
+    legendSusfsSparse: 'Tương thích SUSFS · kết quả dò không liên tục, xem đánh dấu trên từng dòng',
+    legendSusfsProbeNone: 'SUSFS · lần dò không tìm thấy bản phát hành tháng nào áp dụng được bản vá gốc và build thành công',
+    legendSusfsUnknown: '{n} bản phát hành chưa được dò',
+    legendSusfsRej: 'Ô vuông rỗng · bản vá gốc để lại xung đột .rej nhưng kernel vẫn build được, cần sửa thủ công trước khi tin dùng',
+    probeSource: 'được dò bằng bản build {variant} đầy đủ vào {date} (susfs4ksu {commit})',
+    probeRun: 'lần chạy dò',
+    susfsRejMark: 'SUSFS có rej',
+    statusProbeClean: 'Dò: bản vá gốc áp dụng sạch (0 .rej) và build thành công · {variant} · {date} · susfs4ksu {commit}',
+    statusProbeRej: 'Dò: bản vá gốc để lại {rej} .rej nhưng kernel vẫn build thành công · {variant} · {date} · susfs4ksu {commit}',
+    statusProbeFailed: 'Dò: build kernel thất bại với bản vá gốc ({rej} .rej) · {variant} · {date} · susfs4ksu {commit}',
+    legend: 'Chú giải',
+    legendLatest: 'Bản phát hành mới nhất trên nhánh này',
+    legendDelta: '+N · số sublevel tăng so với phiên bản trước · ×N · số tháng giữ nguyên cùng phiên bản',
+    susfsUrl: 'https://gitlab.com/simonpunk/susfs4ksu',
+    rulerGroup: 'Thước tháng: vạch dài là tháng có bản phát hành. Dùng ← → để chọn tháng và Enter để nhảy tới dòng đó',
+    ledgerHeading: 'Danh sách bản phát hành',
+    rowAction: 'Xem tham số build',
+    tcWhat: 'giờ UTC',
+    tcTitle: 'Chuyển đổi thời gian → UTC',
+    tcHint: 'Chuyển ngày và giờ thành chuỗi UTC dùng trong chuỗi phiên bản kernel',
+    tcDate: 'Ngày',
+    tcTime: 'Giờ (UTC)',
+    date: 'Bản vá',
+    kernelVersion: 'Kernel',
+    ledgerStatus: '{n} bản phát hành · {first} → {last}',
+    deprecatedRule: '{cutoff} trở về trước · đã ngừng gộp bản vá bảo mật',
+    susfsRule: 'Mốc SUSFS · ≥ {kernel} · các dòng phía trên áp dụng trực tiếp được susfs4ksu',
+    collapse: 'Thu gọn ({n})',
+    expand: 'Mở rộng ({n})',
+    monthsUnit: 'tháng',
+    newBadge: 'Mới nhất',
+    deprecated: 'Ngừng hỗ trợ',
+    susfsCompat: 'SUSFS',
+    rowHint: 'Tham số build cho {date} · {kernel}',
+    rulerHint: 'Thước tháng: vạch dài là tháng có bản phát hành, vạch ngắn là tháng không có',
+    search: 'Tìm kiếm',
+    searchPlaceholder: 'Lọc theo tháng, phiên bản hoặc trạng thái…',
+    searchCount: 'Khớp {n} / {total}',
+    noResults: 'Không có kết quả cho “{q}”',
+    clearSearch: 'Xóa',
+    announce: 'Thông báo',
+    announceUnread: 'Có thông báo mới',
+    announceClose: 'Đã hiểu',
+    announceDismiss: 'Không hiện lại hôm nay',
+    modalTitle: 'Tham số build',
+    modalBranch: 'Nhánh AOSP',
+    modalAndroid: 'Phiên bản Android',
+    modalKernel: 'Phiên bản Kernel',
+    modalSublevel: 'Sublevel',
+    modalPatch: 'Mức bản vá bảo mật',
+    modalRepoInit: 'repo init',
+    modalRepoInitWhat: 'lệnh repo init',
+    modalManifest: 'ghi đè manifest',
+    modalManifestWhat: 'lệnh ghi đè manifest',
+    modalManifestHint: 'Nhánh này trên upstream đã chuyển vào thư mục deprecated/. Sau khi chạy repo init, hãy trỏ manifest tới đường dẫn deprecated/ trước khi chạy repo sync.',
+    modalManifestTagHint: 'Upstream đã xóa nhánh tháng này, chỉ còn lại thẻ phát hành {tag}. Sau khi chạy repo init, hãy trỏ revision trong manifest tới thẻ đó trước khi chạy repo sync.',
+    statusUpstreamMoved: 'Upstream: nhánh đã chuyển vào deprecated/',
+    statusUpstreamTag: 'Upstream: nhánh đã bị xóa, chỉ còn thẻ phát hành {tag}',
+    modalSusfsClone: 'clone susfs4ksu',
+    modalSusfsCloneWhat: 'lệnh clone susfs4ksu',
+    modalOpenSource: 'Mở nhánh trên googlesource',
+    modalGuide: 'Xem hướng dẫn',
+    modalHint: 'Dán các giá trị này vào ô nhập liệu của workflow “Custom Android Kernel Build”, hoặc chạy trực tiếp các lệnh trên máy cục bộ.',
+    statusDep: 'Tháng này đã ngừng gộp bản vá bảo mật',
+    statusSusfs: '≥ {kernel} · bản vá susfs4ksu có thể áp dụng trực tiếp',
+    statusLts: 'Thẻ hỗ trợ dài hạn (LTS) trên nhánh {branch}',
+    copy: 'Sao chép',
+    copied: 'Đã chép',
+    copyToast: 'Đã sao chép {what}',
+    copyToastGeneric: 'Đã sao chép vào bộ nhớ tạm',
+    guide: 'Hướng dẫn',
+    backToTop: 'Về đầu trang',
+    closeDialog: 'Đóng',
+    footerPre: 'Dữ liệu lấy từ',
+    footerPost: ', được cập nhật tự động bởi GitHub Actions.',
+    langEn: 'Switch to English',
+    langVi: 'Chuyển sang Tiếng Việt',
+    langZh: '切换到中文',
   },
   zh: {
     title: 'GKI 内核版本',
@@ -192,7 +296,7 @@ var I18N = {
     modalSusfsCloneWhat: 'susfs4ksu 克隆命令',
     modalOpenSource: '在 googlesource 打开该分支',
     modalGuide: '查看教程',
-    modalHint: '把这些值填入「Android 内核构建-自定义」工作流的输入框，或在本地直接运行命令。',
+    modalHint: '把这些值填入 “Custom Android Kernel Build” 工作流的输入框，或在本地直接运行命令。',
     statusDep: '该月份已停止合并安全补丁',
     statusSusfs: '≥ {kernel} · 可直接应用 susfs4ksu 补丁',
     statusLts: '{branch} 分支的长期支持版本',
@@ -205,29 +309,30 @@ var I18N = {
     closeDialog: '关闭',
     footerPre: '数据来源于',
     footerPost: '，由 GitHub Actions 自动刷新。',
-    langZh: '切换到中文',
     langEn: 'Switch to English',
+    langVi: 'Chuyển sang Tiếng Việt',
+    langZh: '切换到中文',
   },
 };
 
-// 语言优先级：localStorage > navigator.language
+// Language preference: saved localStorage value ('en' | 'vi' | 'zh'), strictly defaulting to English ('en')
 import { getStored, setStored } from './utils.js';
 
 var savedLang = getStored('lang');
-export var lang = (savedLang === 'zh' || savedLang === 'en')
+export var lang = (savedLang === 'en' || savedLang === 'vi' || savedLang === 'zh')
   ? savedLang
-  : (/^zh\b/i.test(navigator.language) ? 'zh' : 'en');
+  : 'en';
 export var t = I18N[lang];
 
-// 切换语言并刷新页面
+// Switch active language and reload the page
 export function setLang(next) {
-  if (next !== 'zh' && next !== 'en') return;
+  if (next !== 'en' && next !== 'vi' && next !== 'zh') return;
   if (next === lang) return;
   setStored('lang', next);
   location.reload();
 }
 
-// 把静态元素的文案按 data-i18n / data-i18n-attr 属性填入
+// Populate static elements via data-i18n and data-i18n-attr attributes
 export function applyStaticText(root) {
   var scope = root || document;
   scope.querySelectorAll('[data-i18n]').forEach(function (el) {
@@ -238,7 +343,7 @@ export function applyStaticText(root) {
     }
   });
   scope.querySelectorAll('[data-i18n-attr]').forEach(function (el) {
-    // 形如 data-i18n-attr="title:search,placeholder:searchPlaceholder"
+    // Format: data-i18n-attr="title:search,placeholder:searchPlaceholder"
     el.getAttribute('data-i18n-attr').split(',').forEach(function (pair) {
       var parts = pair.split(':');
       var attr = parts[0].trim();
@@ -249,19 +354,21 @@ export function applyStaticText(root) {
 }
 
 /**
- * 初始化 i18n：设置页面语言属性、静态文本、语言切换按钮
+ * Initialize i18n: set document lang attribute, apply static text, and bind language switch buttons.
  */
 export function initI18n() {
-  document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+  document.documentElement.lang = lang === 'zh' ? 'zh-CN' : lang;
   document.title = t.title;
   applyStaticText(document);
 
+  var langLabels = { en: t.langEn, vi: t.langVi, zh: t.langZh };
   document.querySelectorAll('.lang-switch [data-lang]').forEach(function (btn) {
     var target = btn.getAttribute('data-lang');
     var isCurrent = target === lang;
+    var label = langLabels[target] || t.langEn;
     btn.setAttribute('aria-current', isCurrent ? 'true' : 'false');
-    btn.setAttribute('title', target === 'zh' ? t.langZh : t.langEn);
-    btn.setAttribute('aria-label', target === 'zh' ? t.langZh : t.langEn);
+    btn.setAttribute('title', label);
+    btn.setAttribute('aria-label', label);
     btn.addEventListener('click', function () { setLang(target); });
   });
 }

@@ -1,26 +1,26 @@
-name: "Bug Report / 问题反馈"
-description: "Report a bug / 报告问题"
+name: "Bug Report / Báo lỗi"
+description: "Report a bug / Báo cáo lỗi"
 labels: ["bug"]
 
 body:
   - type: markdown
     attributes:
       value: |
-        **Please fill in the following information / 请填写以下信息**
+        **Please fill in the following information / Vui lòng điền các thông tin dưới đây**
 
   - type: textarea
     id: description
     attributes:
-      label: "Bug Description / 问题描述"
-      description: "Describe the bug clearly / 清晰描述问题"
+      label: "Bug Description / Mô tả lỗi"
+      description: "Describe the bug clearly / Mô tả rõ ràng lỗi bạn gặp phải"
     validations:
       required: true
 
   - type: textarea
     id: reproduce
     attributes:
-      label: "Steps to Reproduce / 复现步骤"
-      description: "How to reproduce this issue / 如何复现此问题"
+      label: "Steps to Reproduce / Các bước tái hiện"
+      description: "How to reproduce this issue / Làm thế nào để tái hiện vấn đề này"
       placeholder: |
         1. ...
         2. ...
@@ -29,20 +29,20 @@ body:
   - type: textarea
     id: device
     attributes:
-      label: "Device Info / 设备信息"
-      description: "Your device and kernel info / 设备与内核信息"
+      label: "Device Info / Thông tin thiết bị"
+      description: "Your device and kernel info / Thông tin thiết bị và kernel của bạn"
       value: |
-        - Device / 设备:
-        - Android Version / 安卓版本:
-        - Kernel Version / 内核版本:
-        - KernelSU Version / KernelSU版本:
-        - SUSFS Version / SUSFS版本:
+        - Device / Thiết bị:
+        - Android Version / Phiên bản Android:
+        - Kernel Version / Phiên bản Kernel:
+        - KernelSU Version / Phiên bản KernelSU:
+        - SUSFS Version / Phiên bản SUSFS:
     validations:
       required: true
 
   - type: textarea
     id: logs
     attributes:
-      label: "Logs / 日志"
-      description: "Relevant logs or screenshots / 相关日志或截图"
+      label: "Logs / Nhật ký"
+      description: "Relevant logs or screenshots / Nhật ký hoặc ảnh chụp màn hình liên quan"
       render: shell
