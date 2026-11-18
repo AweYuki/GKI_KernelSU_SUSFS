@@ -1,15 +1,15 @@
-name: Auto Trigger on SukiSU-Nova Update
+name: Auto Trigger on AweYukiSU Update
 
 on:
   schedule:
-    - cron: '0 0 */3 * *'  # 每三天 UTC 00:00 运行
+    - cron: '0 0 */3 * *'  # Runs every 3 days at 00:00 UTC
   workflow_dispatch:
 
 jobs:
   check-and-trigger:
     runs-on: ubuntu-24.04
-    # 仅允许指定仓库所有者触发自动构建
-    if: contains(fromJSON('["zzh20188", "elysias123"]'), github.repository_owner)
+    # Only allow specified repository owners to trigger automatic builds
+    if: contains(fromJSON('["AweYuki"]'), github.repository_owner)
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -17,11 +17,11 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
           
-      - name: 获取 SukiSU-Nova main 最新提交
+      - name: Get latest AweYukiSU main commit
         id: get_sha
         run: |
           set -euo pipefail
-          LATEST_SHA=$(curl -fsSL https://api.github.com/repos/SukiSU-Nova/SukiSU-Nova/commits/main |
+          LATEST_SHA=$(curl -fsSL https://api.github.com/repos/AweYuki/AweYukiSU/commits/main |
             jq -er '.sha | select(type == "string" and test("^[0-9a-f]{40}$"))')
           echo "sha=$LATEST_SHA" >> $GITHUB_OUTPUT
           echo "Latest SHA: $LATEST_SHA"
@@ -82,5 +82,5 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add latest_sha.txt
-          git commit -m "Update SukiSU latest SHA to ${{ steps.get_sha.outputs.sha }}" || exit 0
+          git commit -m "Update AweYukiSU latest SHA to ${{ steps.get_sha.outputs.sha }}" || exit 0
           git push origin sha
