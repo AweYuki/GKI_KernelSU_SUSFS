@@ -35,15 +35,6 @@ on:
           - "Disable SUSFS"
           - "Disable KSU"
         default: "Off"
-      use_kpm:
-        description: "KPM support (patched is not supported yet)"
-        required: true
-        type: choice
-        default: "disabled"
-        options:
-          - "disabled"
-          - "enabled"
-          - "patched (not supported yet)"
       droidspaces:
         description: "Droidspaces container support (5.10~6.6: slot patch, 6.12: on/off)"
         required: false
@@ -232,7 +223,6 @@ jobs:
       build_time: ${{ inputs.build_time || '' }}
       use_zram: ${{ inputs.use_zram }}
       use_bbg: ${{ inputs.use_bbg }}
-      use_kpm: ${{ inputs.use_kpm }}
       use_rekernel: ${{ inputs.use_rekernel || false }}
       use_nomount: ${{ inputs.use_nomount || false }}
       use_networking: ${{ inputs.use_networking || false }}
