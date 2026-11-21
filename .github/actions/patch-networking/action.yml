@@ -47,27 +47,52 @@ runs:
             exit 1
           fi
           echo "[*] Using BBRv3 patch: $(basename "$BBR3_PATCH")"
+          # Temporary compatibility: LTS branches (6.1.192+) added tcp_min_rcvbuf before /* obsolete */,
+          # while upstream kernel_patches lacks a 6.1/6.6 -lts patch; move it aside during patching and restore it afterward.
+          SYSCTL_C="net/ipv4/sysctl_net_ipv4.c"
+          MINRCV_LINE=""
+          restore_minrcv() {
+            if [ -n "$MINRCV_LINE" ] && ! grep -qF "$MINRCV_LINE" "$SYSCTL_C"; then
+              sed -i "0,/^\/\* obsolete \*\/\$/s||${MINRCV_LINE}\n\n/* obsolete */|" "$SYSCTL_C"
+              grep -qF "$MINRCV_LINE" "$SYSCTL_C" || { echo "::error::Failed to restore tcp_min_rcvbuf" >&2; exit 1; }
+            fi
+          }
+          if ! patch -p1 --dry-run < "$BBR3_PATCH" >/dev/null 2>&1 \
+            && grep -A1 '^static int tcp_min_rcvbuf = [0-9]*;$' "$SYSCTL_C" 2>/dev/null | sed -n 2p | grep -q '^$'; then
+            MINRCV_LINE=$(grep -m1 '^static int tcp_min_rcvbuf = [0-9]*;$' "$SYSCTL_C")
+            sed -i '/^static int tcp_min_rcvbuf = [0-9]*;$/{N;d}' "$SYSCTL_C"
+            echo "[*] Temporarily moved tcp_min_rcvbuf aside to match monthly patch context"
+          fi
+
           if patch -p1 --dry-run < "$BBR3_PATCH" >/dev/null 2>&1; then
             patch -p1 --no-backup-if-mismatch < "$BBR3_PATCH"
+            restore_minrcv
             echo "[+] Applied BBRv3 patch"
+          elif [ "${{ inputs.os_patch_level }}" = "lts" ]; then
+            restore_minrcv
+            echo "::warning title=BBRv3::LTS branch context drifted; $(basename "$BBR3_PATCH") could not apply, falling back to BBR v1"
+            BBR3_PATCH=""
           else
+            restore_minrcv
             echo "::error::Failed to apply BBRv3 patch; keeping .rej files for Rejects artifact analysis" >&2
             patch -p1 --no-backup-if-mismatch < "$BBR3_PATCH" || true
             exit 1
           fi
 
-          RAW_SUB="$ACTUAL_SUBLEVEL"
-          [[ ! "$RAW_SUB" =~ ^[0-9]+$ ]] && CURRENT_SUB=99999 || CURRENT_SUB=$RAW_SUB
-          if [ "$AVER-$KVER" = "android13-5.15" ] && [ "$CURRENT_SUB" -le 43 ]; then
-            patch -p1 --forward < "$GITHUB_WORKSPACE/patches/bbrv3/0002-net-tcp-add-tcp_snd_cwnd-and-tcp_snd_cwnd_set-helper-functions.patch"
-            echo "[+] Applied 5.15 <= 43 tcp_snd_cwnd helper prerequisite patch"
+          if [ -n "$BBR3_PATCH" ]; then
+            RAW_SUB="$ACTUAL_SUBLEVEL"
+            [[ ! "$RAW_SUB" =~ ^[0-9]+$ ]] && CURRENT_SUB=99999 || CURRENT_SUB=$RAW_SUB
+            if [ "$AVER-$KVER" = "android13-5.15" ] && [ "$CURRENT_SUB" -le 43 ]; then
+              patch -p1 --forward < "$GITHUB_WORKSPACE/patches/bbrv3/0002-net-tcp-add-tcp_snd_cwnd-and-tcp_snd_cwnd_set-helper-functions.patch"
+              echo "[+] Applied 5.15 <= 43 tcp_snd_cwnd helper prerequisite patch"
+            fi
           fi
         else
           echo "[*] No BBRv3 backport for $AVER-$KVER, skipping patch"
         fi
 
         # 5.10 lacks proc_dou8vec_minmax (a 5.15+ sysctl API required by BBRv3); apply the two prerequisite patches
-        if [ "$KVER" = "5.10" ] && ! grep -qF 'int proc_dou8vec_minmax(' include/linux/sysctl.h 2>/dev/null; then
+        if [ -n "$BBR3_PATCH" ] && [ "$KVER" = "5.10" ] && ! grep -qF 'int proc_dou8vec_minmax(' include/linux/sysctl.h 2>/dev/null; then
           for prepatch in sysctl_add_proc_dou8vec_minmax sysctl_fix_data-races_in_proc_dou8vec_minmax; do
             if patch -p1 --dry-run < "$BBR3_DIR/$prepatch.patch" >/dev/null 2>&1; then
               patch -p1 --no-backup-if-mismatch < "$BBR3_DIR/$prepatch.patch"

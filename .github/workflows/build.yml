@@ -703,6 +703,11 @@ jobs:
           else
             perl -pi -e 's/^\s*"protected_exports_list"\s*:\s*"android\/abi_gki_protected_exports_aarch64",\s*$//;' ./common/BUILD.bazel
             perl -pi -e 's/^\s*protected_module_names_list\s*=\s*":[A-Za-z0-9_]*_protected_module_names",\s*$//;' ./common/BUILD.bazel
+            if grep -q 'protected_module_names_list' ./common/BUILD.bazel; then
+              echo "::error::BUILD.bazel still contains protected_module_names_list; protected module restriction was not removed" >&2
+              grep -n 'protected_module_names_list' ./common/BUILD.bazel >&2
+              exit 1
+            fi
             sed -i '/kmi_symbol_list_strict_mode/d' ./common/BUILD.bazel
             if [ -f ./common/modules.bzl ] && grep -q '^[[:space:]]*protected_modules = ' ./common/modules.bzl; then
               sed -i 's/protected_modules = \[.*\]/protected_modules = []/' ./common/modules.bzl
